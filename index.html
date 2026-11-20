@@ -45,6 +45,16 @@
             z-index: 10;
         }
 
+        /* Khóa mờ tổ không thuộc quyền thao tác */
+        .team-locked-row {
+            opacity: 0.52;
+            background-color: #f8fafc;
+        }
+        .team-locked-cell {
+            cursor: not-allowed !important;
+            background-color: rgba(241, 245, 249, 0.65);
+        }
+
         /* Định dạng In Ấn chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP) */
         @media print {
             body {
@@ -72,6 +82,13 @@
             }
             .overflow-x-auto {
                 overflow: visible !important;
+            }
+            .team-locked-row {
+                opacity: 1 !important;
+                background-color: transparent !important;
+            }
+            .team-locked-cell {
+                background-color: transparent !important;
             }
             table {
                 border-collapse: collapse !important;
@@ -158,10 +175,10 @@
                     <div id="auth-unlocked-bar" class="hidden flex items-center gap-1.5 bg-emerald-500/25 border border-emerald-300/40 px-2.5 py-1.5 rounded-xl">
                         <span class="text-xs text-emerald-200 font-semibold flex items-center gap-1.5" title="Tự động khóa sau 15 phút không thao tác">
                             <i class="fa-solid fa-shield-halved text-emerald-300"></i>
-                            <span>Quyền Trưởng ca</span>
+                            <span id="active-role-label">Quyền Trưởng ca</span>
                             <span id="auto-lock-timer" class="text-[10px] bg-emerald-950/50 px-1.5 py-0.5 rounded font-mono text-emerald-200">15:00</span>
                         </span>
-                        <button type="button" onclick="window.openChangePassModal()" title="Đổi mật khẩu Trưởng ca" class="ml-1 px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
+                        <button type="button" onclick="window.openChangePassModal()" title="Đổi mật khẩu vai trò" class="ml-1 px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
                             <i class="fa-solid fa-key"></i>
                             <span class="hidden md:inline">Đổi MK</span>
                         </button>
@@ -258,7 +275,7 @@
                         <i class="fa-solid fa-lock mr-1"></i>Đang khóa chỉnh sửa (Chỉ xem)
                     </span>
                     <span id="unlocked-hint-badge" class="hidden text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-medium">
-                        <i class="fa-solid fa-lock-open mr-1"></i>Click ô ngày để xoay vòng ca trực
+                        <i class="fa-solid fa-lock-open mr-1"></i><span id="unlocked-hint-text">Click ô ngày để xoay vòng ca trực</span>
                     </span>
                 </div>
 
@@ -268,7 +285,7 @@
                 </div>
 
                 <div id="supervisor-toolbar-actions" class="flex flex-wrap items-center gap-2">
-                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <div id="bulk-weather-controls" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                         <span class="text-[11px] font-semibold text-slate-500 pl-2">Cả kỳ:</span>
                         <button type="button" onclick="window.applyBulkWeather('normal')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 transition">
                             <i class="fa-solid fa-sun text-amber-500 mr-1"></i>Bình thường
@@ -280,12 +297,12 @@
 
                     <button type="button" onclick="window.autoAssignSchedule()" class="px-3.5 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <span>Phân ca tự động</span>
+                        <span id="btn-auto-assign-label">Phân ca tự động</span>
                     </button>
 
-                    <button type="button" onclick="window.confirmClearSchedule()" class="px-3 py-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 text-xs font-semibold transition flex items-center gap-1.5" title="Xóa trắng lịch trực kỳ này">
+                    <button type="button" onclick="window.confirmClearSchedule()" class="px-3 py-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 text-xs font-semibold transition flex items-center gap-1.5" title="Xóa trắng lịch trực theo phạm vi quyền">
                         <i class="fa-solid fa-eraser"></i>
-                        <span>Xóa trắng lịch</span>
+                        <span id="btn-clear-schedule-label">Xóa trắng lịch</span>
                     </button>
                 </div>
             </div>
@@ -599,7 +616,7 @@
         </div>
     </div>
 
-    <!-- 5. Modal Xác nhận hành động (Thay thế confirm() để không lỗi iframe) -->
+    <!-- 5. Modal Xác nhận hành động -->
     <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-200">
             <div class="p-5 text-center space-y-3">
@@ -616,7 +633,7 @@
         </div>
     </div>
 
-    <!-- 6. Modal Mở khóa Quyền Trưởng ca -->
+    <!-- 6. Modal Mở khóa Quyền Trưởng ca (Phân quyền độc lập 3 vai trò) -->
     <div id="unlock-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
             <div class="px-5 py-4 bg-gradient-to-r from-sky-900 to-indigo-900 text-white flex items-center justify-between">
@@ -625,8 +642,8 @@
                         <i class="fa-solid fa-key"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm">Xác Thực Trưởng Ca Trực</h3>
-                        <p class="text-[11px] text-sky-200">Mở khóa quyền lập và điều chỉnh lịch trực</p>
+                        <h3 class="font-bold text-sm">Xác Thực Phân Quyền Trực</h3>
+                        <p class="text-[11px] text-sky-200">Mở khóa đúng tổ chuyên môn hoặc Quản trị</p>
                     </div>
                 </div>
                 <button type="button" onclick="window.closeModal('unlock-modal')" class="text-white/80 hover:text-white p-1">
@@ -635,9 +652,9 @@
             </div>
             <form onsubmit="window.handleUnlockSubmit(event)" class="p-5 space-y-4">
                 <div>
-                    <label for="unlock-password-input" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nhập mật khẩu Trưởng ca</label>
+                    <label for="unlock-password-input" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nhập mật khẩu phân quyền</label>
                     <div class="relative">
-                        <input type="password" id="unlock-password-input" autocomplete="off" placeholder="Nhập mật khẩu..."
+                        <input type="password" id="unlock-password-input" autocomplete="off" placeholder="Nhập mật khẩu tổ hoặc quản trị..."
                             class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none">
                         <button type="button" onclick="window.togglePasswordVisibility('unlock-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                             <i class="fa-solid fa-eye text-xs"></i>
@@ -649,16 +666,20 @@
                     </p>
                 </div>
 
-                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 space-y-1">
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 space-y-1.5">
                     <div class="font-semibold flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-info text-sky-600"></i>
-                        <span>Thông tin truy cập mặc định:</span>
+                        <i class="fa-solid fa-shield-halved text-sky-600"></i>
+                        <span>Mật khẩu mặc định theo 3 vai trò:</span>
                     </div>
-                    <p class="text-[11px] text-sky-800">Mật khẩu mặc định ban đầu là: <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kttv2026</code> (Có thể đổi mật khẩu sau khi mở khóa).</p>
+                    <ul class="text-[11px] text-sky-800 space-y-1 pl-1">
+                        <li>• <strong>Trưởng ca Thủy văn:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">tv2026</code> (chỉ sửa Tổ Thủy văn)</li>
+                        <li>• <strong>Trưởng ca Khí tượng:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kt2026</code> (chỉ sửa Tổ Khí tượng)</li>
+                        <li>• <strong>Quản trị Tổng hợp:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kttv2026</code> (sửa toàn bộ 2 tổ)</li>
+                    </ul>
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
-                    <button type="button" onclick="window.confirmResetDefaultPassword()" class="text-[11px] text-slate-400 hover:text-rose-600 underline">Đặt lại mật khẩu gốc?</button>
+                    <button type="button" onclick="window.confirmResetDefaultPassword()" class="text-[11px] text-slate-400 hover:text-rose-600 underline">Khôi phục MK gốc?</button>
                     <div class="flex gap-2">
                         <button type="button" onclick="window.closeModal('unlock-modal')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Hủy</button>
                         <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition flex items-center gap-1.5">
@@ -671,13 +692,13 @@
         </div>
     </div>
 
-    <!-- 7. Modal Đổi mật khẩu Trưởng ca -->
+    <!-- 7. Modal Đổi mật khẩu theo vai trò -->
     <div id="change-pass-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
             <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-key text-amber-400"></i>
-                    <h3 class="font-bold text-sm">Đổi Mật Khẩu Trưởng Ca</h3>
+                    <h3 class="font-bold text-sm">Đổi Mật Khẩu Phân Quyền</h3>
                 </div>
                 <button type="button" onclick="window.closeModal('change-pass-modal')" class="text-white/80 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -685,7 +706,15 @@
             </div>
             <form onsubmit="window.handleChangePassSubmit(event)" class="p-5 space-y-3.5">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu hiện tại</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Vai trò cần đổi mật khẩu</label>
+                    <select id="cp-target-role" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold bg-slate-50 outline-none focus:border-sky-500">
+                        <option value="hydro">Trưởng ca Thủy văn</option>
+                        <option value="meteo">Trưởng ca Khí tượng</option>
+                        <option value="admin">Quản trị Tổng hợp</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu hiện tại của vai trò này</label>
                     <input type="password" id="cp-old-pass" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500">
                 </div>
                 <div>
@@ -706,15 +735,20 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- JAVASCRIPT HOÀN CHỈNH & AN TOÀN TUYỆT ĐỐI                             -->
+    <!-- JAVASCRIPT HOÀN CHỈNH: PHÂN QUYỀN ĐỘC LẬP 2 TỔ + ĐỒNG BỘ FIREBASE     -->
     <!-- ===================================================================== -->
     <script>
         (function() {
             'use strict';
 
             const STORAGE_KEY = 'kttv_forecast_roster_v3';
-            const AUTH_PASS_KEY = 'kttv_supervisor_pass_v1';
-            const DEFAULT_SUPERVISOR_PASS = 'kttv2026';
+            const AUTH_PASS_KEY = 'kttv_role_passwords_v2';
+            const LEGACY_AUTH_PASS_KEY = 'kttv_supervisor_pass_v1';
+            const DEFAULT_PASSWORDS = {
+                hydro: 'tv2026',    // Trưởng ca Thủy văn
+                meteo: 'kt2026',    // Trưởng ca Khí tượng
+                admin: 'kttv2026'   // Quản trị Tổng hợp
+            };
             const AUTO_LOCK_DURATION_SEC = 15 * 60; // Tự động khóa sau 15 phút không thao tác
 
             // Cấu hình Firebase Realtime Database (Dự án: Lich truc KTTV TH)
@@ -730,7 +764,8 @@
 
             let firebaseDb = null;
             let rosterDbRef = null;
-            let passDbRef = null;
+            let rolesAuthDbRef = null;
+            let legacyPassDbRef = null;
             let isApplyingRemoteUpdate = false;
             let hasInitialCloudSync = false;
 
@@ -759,13 +794,14 @@
                     }
                     firebaseDb = firebase.database();
                     rosterDbRef = firebaseDb.ref('kttv_forecast_roster_v3');
-                    passDbRef = firebaseDb.ref('kttv_supervisor_auth/pass');
+                    rolesAuthDbRef = firebaseDb.ref('kttv_supervisor_auth/roles');
+                    legacyPassDbRef = firebaseDb.ref('kttv_supervisor_auth/pass');
                 }
             } catch (e) {
                 console.error('Lỗi khởi tạo Firebase:', e);
             }
 
-            // Danh sách nhân sự chuẩn theo yêu cầu
+            // Danh sách nhân sự chuẩn
             const DEFAULT_STAFF = [
                 // Tổ Dự báo Thủy văn (4 người)
                 { id: 'h1', name: 'Nguyễn Thị Thủy', team: 'hydro' },
@@ -781,7 +817,7 @@
                 { id: 'm6', name: 'Thiều Tú Anh', team: 'meteo' }
             ];
 
-            // Định mức mặc định: Bình thường Thủy văn 1N/1Đ, Khí tượng 2N/2Đ
+            // Định mức mặc định
             const DEFAULT_PRESETS = {
                 normal: { hydroDay: 1, hydroNight: 1, meteoDay: 2, meteoNight: 2 },
                 severe: { hydroDay: 2, hydroNight: 2, meteoDay: 3, meteoNight: 3 }
@@ -794,8 +830,8 @@
                 startDate: '',
                 endDate: '',
                 schedule: {},
-                isUnlocked: false, // Mặc định vào trang là Chế độ Xem (Chỉ đọc)
-                supervisorPass: DEFAULT_SUPERVISOR_PASS
+                activeRole: null, // null | 'hydro' | 'meteo' | 'admin'
+                rolePasswords: { ...DEFAULT_PASSWORDS }
             };
 
             let editingShiftContext = null;
@@ -806,8 +842,25 @@
             let autoLockIntervalId = null;
 
             // ==========================================
-            // 1. LƯU TRỮ & PHÂN QUYỀN AN TOÀN
+            // 1. LƯU TRỮ & PHÂN QUYỀN ĐỘC LẬP 3 VAI TRÒ
             // ==========================================
+            function getRoleDisplayName(role) {
+                if (role === 'hydro') return 'Trưởng ca Thủy văn';
+                if (role === 'meteo') return 'Trưởng ca Khí tượng';
+                if (role === 'admin') return 'Quản trị Tổng hợp';
+                return 'Chế độ Xem';
+            }
+
+            function canEditTeam(team) {
+                if (!appState.activeRole) return false;
+                if (appState.activeRole === 'admin') return true;
+                return appState.activeRole === team;
+            }
+
+            function canEditGlobalSettings() {
+                return appState.activeRole === 'admin';
+            }
+
             function normalizeFirebaseSchedule(rawSchedule) {
                 if (!rawSchedule || typeof rawSchedule !== 'object') return {};
                 const clean = {};
@@ -834,7 +887,8 @@
                 return clean;
             }
 
-            function saveToStorage() {
+            // Ghi toàn bộ cây dữ liệu (dùng cho Admin, đổi ngày, khởi tạo)
+            function saveFullStateToStorage() {
                 const payload = {
                     staff: appState.staff,
                     presets: appState.presets,
@@ -845,16 +899,12 @@
                 };
                 try {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-                } catch (err) {
-                    // Bỏ qua lỗi SecurityError nếu chạy trong iframe hạn chế storage
-                }
+                } catch (err) {}
 
                 if (rosterDbRef && !isApplyingRemoteUpdate) {
                     updateSyncBadge('saving', 'Đang đồng bộ...');
                     rosterDbRef.set(payload)
-                        .then(() => {
-                            updateSyncBadge('connected', 'Đã đồng bộ đám mây');
-                        })
+                        .then(() => updateSyncBadge('connected', 'Đã đồng bộ đám mây'))
                         .catch((err) => {
                             console.error('Firebase write error:', err);
                             updateSyncBadge('error', 'Lỗi ghi đám mây');
@@ -862,38 +912,106 @@
                 }
             }
 
-            function savePasswordToStorage(newPass) {
-                appState.supervisorPass = newPass;
+            // Ghi cục bộ theo đúng nhánh tổ trên Firebase (tránh ghi đè chéo khi 2 trưởng ca chấm đồng thời)
+            function saveTeamShiftsToStorage(team, targetDates = null) {
+                const datesToSync = targetDates || getActiveDateList();
                 try {
-                    localStorage.setItem(AUTH_PASS_KEY, newPass);
-                } catch (err) {
-                    // Bỏ qua lỗi nếu storage bị hạn chế
-                }
-                if (passDbRef) {
-                    passDbRef.set(newPass).catch(() => {});
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        staff: appState.staff,
+                        presets: appState.presets,
+                        startDate: appState.startDate,
+                        endDate: appState.endDate,
+                        schedule: appState.schedule,
+                        updatedAt: Date.now()
+                    }));
+                } catch (err) {}
+
+                if (rosterDbRef && !isApplyingRemoteUpdate) {
+                    const updates = { updatedAt: Date.now() };
+                    const teamsToWrite = team === 'all' ? ['hydro', 'meteo'] : [team];
+                    datesToSync.forEach(dateStr => {
+                        const dayData = appState.schedule[dateStr];
+                        if (!dayData) return;
+                        teamsToWrite.forEach(t => {
+                            updates[`schedule/${dateStr}/shifts/${t}Day`] = dayData.shifts[`${t}Day`] || [];
+                            updates[`schedule/${dateStr}/shifts/${t}Night`] = dayData.shifts[`${t}Night`] || [];
+                        });
+                    });
+
+                    updateSyncBadge('saving', 'Đang đồng bộ...');
+                    rosterDbRef.update(updates)
+                        .then(() => updateSyncBadge('connected', 'Đã đồng bộ đám mây'))
+                        .catch((err) => {
+                            console.error('Firebase partial update error:', err);
+                            updateSyncBadge('error', 'Lỗi ghi đám mây');
+                        });
                 }
             }
 
-            function loadPasswordFromStorage() {
+            function savePasswordsToStorage(newRolesObj) {
+                appState.rolePasswords = {
+                    hydro: newRolesObj.hydro || DEFAULT_PASSWORDS.hydro,
+                    meteo: newRolesObj.meteo || DEFAULT_PASSWORDS.meteo,
+                    admin: newRolesObj.admin || DEFAULT_PASSWORDS.admin
+                };
                 try {
-                    const savedPass = localStorage.getItem(AUTH_PASS_KEY);
-                    if (savedPass && savedPass.length >= 4) {
-                        appState.supervisorPass = savedPass;
+                    localStorage.setItem(AUTH_PASS_KEY, JSON.stringify(appState.rolePasswords));
+                } catch (err) {}
+
+                if (rolesAuthDbRef) {
+                    rolesAuthDbRef.set(appState.rolePasswords).catch(() => {});
+                }
+                if (legacyPassDbRef) {
+                    legacyPassDbRef.set(appState.rolePasswords.admin).catch(() => {});
+                }
+            }
+
+            function loadPasswordsFromStorage() {
+                try {
+                    const savedRoles = localStorage.getItem(AUTH_PASS_KEY);
+                    if (savedRoles) {
+                        const parsed = JSON.parse(savedRoles);
+                        appState.rolePasswords = {
+                            hydro: (parsed.hydro && parsed.hydro.length >= 4) ? parsed.hydro : DEFAULT_PASSWORDS.hydro,
+                            meteo: (parsed.meteo && parsed.meteo.length >= 4) ? parsed.meteo : DEFAULT_PASSWORDS.meteo,
+                            admin: (parsed.admin && parsed.admin.length >= 4) ? parsed.admin : DEFAULT_PASSWORDS.admin
+                        };
                         return;
                     }
+                    const legacyPass = localStorage.getItem(LEGACY_AUTH_PASS_KEY);
+                    if (legacyPass && legacyPass.length >= 4) {
+                        appState.rolePasswords.admin = legacyPass;
+                    }
                 } catch (err) {
-                    // Fallback về mật khẩu mặc định
+                    appState.rolePasswords = { ...DEFAULT_PASSWORDS };
                 }
-                appState.supervisorPass = DEFAULT_SUPERVISOR_PASS;
             }
 
-            function requireSupervisorPermission() {
-                if (appState.isUnlocked) {
-                    resetAutoLockTimer();
-                    return true;
+            function requireTeamPermission(team) {
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' để chỉnh sửa.", 'warning');
+                    return false;
                 }
-                showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' và nhập mật khẩu Trưởng ca để chỉnh sửa.", 'warning');
-                return false;
+                if (!canEditTeam(team)) {
+                    const targetLabel = team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
+                    showToast(`Bạn đang mở quyền ${getRoleDisplayName(appState.activeRole)}, không thể chỉnh sửa ${targetLabel}!`, 'warning');
+                    return false;
+                }
+                resetAutoLockTimer();
+                return true;
+            }
+
+            function requireAdminPermission(actionName = 'thao tác này') {
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
+                    return false;
+                }
+                if (!canEditGlobalSettings()) {
+                    showToast(`Chỉ quyền Quản trị Tổng hợp (kttv2026) mới được phép chỉnh ${actionName}!`, 'warning');
+                    return false;
+                }
+                resetAutoLockTimer();
+                return true;
             }
 
             function resetAutoLockTimer() {
@@ -914,7 +1032,7 @@
                 remainingLockSeconds = AUTO_LOCK_DURATION_SEC;
                 updateAutoLockDisplay();
                 autoLockIntervalId = setInterval(() => {
-                    if (!appState.isUnlocked) {
+                    if (!appState.activeRole) {
                         stopAutoLockCountdown();
                         return;
                     }
@@ -936,28 +1054,63 @@
             function updateAuthUI() {
                 const lockedBar = document.getElementById('auth-locked-bar');
                 const unlockedBar = document.getElementById('auth-unlocked-bar');
+                const activeRoleLabel = document.getElementById('active-role-label');
                 const readonlyHint = document.getElementById('readonly-hint-badge');
                 const unlockedHint = document.getElementById('unlocked-hint-badge');
+                const unlockedHintText = document.getElementById('unlocked-hint-text');
                 const toolbarActions = document.getElementById('supervisor-toolbar-actions');
+                const bulkWeatherControls = document.getElementById('bulk-weather-controls');
                 const btnStaff = document.getElementById('btn-manage-staff');
                 const btnPresets = document.getElementById('btn-manage-presets');
+                const btnAutoLabel = document.getElementById('btn-auto-assign-label');
+                const btnClearLabel = document.getElementById('btn-clear-schedule-label');
 
-                if (appState.isUnlocked) {
+                const role = appState.activeRole;
+                if (role) {
                     lockedBar.classList.add('hidden');
                     unlockedBar.classList.remove('hidden');
                     readonlyHint.classList.add('hidden');
                     unlockedHint.classList.remove('hidden');
                     toolbarActions.classList.remove('opacity-60');
-                    btnStaff.classList.remove('opacity-70');
-                    btnPresets.classList.remove('opacity-70');
+
+                    activeRoleLabel.textContent = getRoleDisplayName(role);
+
+                    if (role === 'hydro') {
+                        unlockedBar.className = 'flex items-center gap-1.5 bg-sky-500/30 border border-sky-300/50 px-2.5 py-1.5 rounded-xl';
+                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Thủy văn (Tổ Khí tượng bị khóa chống nhầm)';
+                        btnAutoLabel.textContent = 'Phân ca tự động (Thủy văn)';
+                        btnClearLabel.textContent = 'Xóa lịch Thủy văn';
+                        bulkWeatherControls.classList.add('opacity-50');
+                        btnStaff.classList.add('opacity-60');
+                        btnPresets.classList.add('opacity-60');
+                    } else if (role === 'meteo') {
+                        unlockedBar.className = 'flex items-center gap-1.5 bg-indigo-500/35 border border-indigo-300/50 px-2.5 py-1.5 rounded-xl';
+                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Khí tượng (Tổ Thủy văn bị khóa chống nhầm)';
+                        btnAutoLabel.textContent = 'Phân ca tự động (Khí tượng)';
+                        btnClearLabel.textContent = 'Xóa lịch Khí tượng';
+                        bulkWeatherControls.classList.add('opacity-50');
+                        btnStaff.classList.add('opacity-60');
+                        btnPresets.classList.add('opacity-60');
+                    } else {
+                        unlockedBar.className = 'flex items-center gap-1.5 bg-emerald-500/25 border border-emerald-300/40 px-2.5 py-1.5 rounded-xl';
+                        unlockedHintText.textContent = 'Quyền Quản trị: Click ô ngày để xoay vòng ca trực cả 2 tổ';
+                        btnAutoLabel.textContent = 'Phân ca tự động';
+                        btnClearLabel.textContent = 'Xóa trắng lịch';
+                        bulkWeatherControls.classList.remove('opacity-50');
+                        btnStaff.classList.remove('opacity-60');
+                        btnPresets.classList.remove('opacity-60');
+                    }
                 } else {
                     lockedBar.classList.remove('hidden');
                     unlockedBar.classList.add('hidden');
                     readonlyHint.classList.remove('hidden');
                     unlockedHint.classList.add('hidden');
                     toolbarActions.classList.add('opacity-60');
+                    bulkWeatherControls.classList.remove('opacity-50');
                     btnStaff.classList.add('opacity-70');
                     btnPresets.classList.add('opacity-70');
+                    btnAutoLabel.textContent = 'Phân ca tự động';
+                    btnClearLabel.textContent = 'Xóa trắng lịch';
                 }
             }
 
@@ -989,13 +1142,22 @@
                 const errEl = document.getElementById('unlock-error-msg');
                 const entered = input.value.trim();
 
-                if (entered === appState.supervisorPass) {
-                    appState.isUnlocked = true;
+                let matchedRole = null;
+                if (entered === appState.rolePasswords.admin) {
+                    matchedRole = 'admin';
+                } else if (entered === appState.rolePasswords.hydro) {
+                    matchedRole = 'hydro';
+                } else if (entered === appState.rolePasswords.meteo) {
+                    matchedRole = 'meteo';
+                }
+
+                if (matchedRole) {
+                    appState.activeRole = matchedRole;
                     window.closeModal('unlock-modal');
                     updateAuthUI();
                     startAutoLockCountdown();
                     renderAll();
-                    showToast('Đã mở khóa quyền Trưởng ca trực! Bạn có thể tiến hành phân ca.', 'success');
+                    showToast(`Đã mở khóa: ${getRoleDisplayName(matchedRole)}!`, 'success');
                 } else {
                     errEl.classList.remove('hidden');
                     input.select();
@@ -1003,7 +1165,7 @@
             };
 
             window.lockShiftControl = function(isAuto = false) {
-                appState.isUnlocked = false;
+                appState.activeRole = null;
                 stopAutoLockCountdown();
                 ['shift-modal', 'day-config-modal', 'staff-modal', 'presets-modal', 'change-pass-modal'].forEach(id => window.closeModal(id));
                 updateAuthUI();
@@ -1016,7 +1178,19 @@
             };
 
             window.openChangePassModal = function() {
-                if (!requireSupervisorPermission()) return;
+                if (!appState.activeRole) {
+                    showToast('Vui lòng mở khóa quyền trước khi đổi mật khẩu.', 'warning');
+                    return;
+                }
+                const targetSelect = document.getElementById('cp-target-role');
+                if (appState.activeRole === 'admin') {
+                    targetSelect.disabled = false;
+                    targetSelect.value = 'admin';
+                } else {
+                    targetSelect.value = appState.activeRole;
+                    targetSelect.disabled = true; // Trưởng ca tổ nào chỉ đổi mật khẩu tổ đó
+                }
+
                 document.getElementById('cp-old-pass').value = '';
                 document.getElementById('cp-new-pass').value = '';
                 document.getElementById('cp-confirm-pass').value = '';
@@ -1027,13 +1201,16 @@
 
             window.handleChangePassSubmit = function(event) {
                 event.preventDefault();
-                if (!requireSupervisorPermission()) return;
+                if (!appState.activeRole) return;
+                const targetRole = document.getElementById('cp-target-role').value;
+                if (appState.activeRole !== 'admin' && targetRole !== appState.activeRole) return;
+
                 const oldP = document.getElementById('cp-old-pass').value.trim();
                 const newP = document.getElementById('cp-new-pass').value.trim();
                 const confP = document.getElementById('cp-confirm-pass').value.trim();
                 const errEl = document.getElementById('cp-error-msg');
 
-                if (oldP !== appState.supervisorPass) {
+                if (oldP !== appState.rolePasswords[targetRole]) {
                     errEl.textContent = 'Mật khẩu hiện tại không đúng!';
                     errEl.classList.remove('hidden');
                     return;
@@ -1049,19 +1226,27 @@
                     return;
                 }
 
-                savePasswordToStorage(newP);
+                const otherRoles = ['hydro', 'meteo', 'admin'].filter(r => r !== targetRole);
+                if (otherRoles.some(r => appState.rolePasswords[r] === newP)) {
+                    errEl.textContent = 'Mật khẩu mới không được trùng với mật khẩu của vai trò khác!';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                const updated = { ...appState.rolePasswords, [targetRole]: newP };
+                savePasswordsToStorage(updated);
                 window.closeModal('change-pass-modal');
-                showToast('Đã cập nhật mật khẩu Trưởng ca mới thành công!', 'success');
+                showToast(`Đã cập nhật mật khẩu mới cho ${getRoleDisplayName(targetRole)} và đồng bộ đám mây!`, 'success');
             };
 
             window.confirmResetDefaultPassword = function() {
                 window.closeModal('unlock-modal');
                 openConfirmModal(
-                    'Đặt lại mật khẩu Trưởng ca gốc?',
-                    'Mật khẩu phân ca sẽ được đặt lại về mặc định ban đầu là "kttv2026". Bạn có chắc chắn muốn thực hiện?',
+                    'Khôi phục 3 mật khẩu mặc định gốc?',
+                    'Mật khẩu sẽ đặt lại về: Thủy văn (tv2026), Khí tượng (kt2026), Quản trị (kttv2026). Bạn có chắc chắn?',
                     function() {
-                        savePasswordToStorage(DEFAULT_SUPERVISOR_PASS);
-                        showToast('Đã đặt lại mật khẩu Trưởng ca về mặc định: kttv2026', 'success');
+                        savePasswordsToStorage({ ...DEFAULT_PASSWORDS });
+                        showToast('Đã khôi phục 3 mật khẩu mặc định: tv2026 / kt2026 / kttv2026', 'success');
                     }
                 );
             };
@@ -1088,9 +1273,7 @@
                         }
                         return;
                     }
-                } catch (err) {
-                    // Fallback về dữ liệu mặc định
-                }
+                } catch (err) {}
                 appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
             }
 
@@ -1171,7 +1354,9 @@
                         }
                     }
                 });
-                if (changed) saveToStorage();
+                if (changed && hasInitialCloudSync) {
+                    saveFullStateToStorage();
+                }
             }
 
             function showToast(message, type = 'info') {
@@ -1243,7 +1428,9 @@
                 document.getElementById('input-end-date').value = appState.endDate;
 
                 ensureScheduleDatesExist();
-                saveToStorage();
+                if (appState.activeRole) {
+                    saveFullStateToStorage();
+                }
                 renderAll();
             };
 
@@ -1269,7 +1456,9 @@
                 appState.startDate = s;
                 appState.endDate = e;
                 ensureScheduleDatesExist();
-                saveToStorage();
+                if (appState.activeRole) {
+                    saveFullStateToStorage();
+                }
                 renderAll();
             };
 
@@ -1304,7 +1493,7 @@
             };
 
             // ==========================================
-            // 4. PHÁT HIỆN XUNG ĐỘT & PHÂN CA TỰ ĐỘNG
+            // 4. PHÁT HIỆN XUNG ĐỘT & PHÂN CA TỰ ĐỘNG THEO TỔ
             // ==========================================
             function detectConflicts(dates) {
                 const warnings = {};
@@ -1317,7 +1506,6 @@
 
                     const isNormalWeather = dayData.weather === 'normal';
 
-                    // Kiểm tra trực cả Ngày & Đêm trong cùng ngày (chỉ cảnh báo khi thời tiết bình thường)
                     ['hydro', 'meteo'].forEach(team => {
                         const dList = dayData.shifts[`${team}Day`] || [];
                         const nList = dayData.shifts[`${team}Night`] || [];
@@ -1330,7 +1518,6 @@
                         });
                     });
 
-                    // Kiểm tra trực Đêm hôm trước -> Ngày hôm sau liên tiếp
                     if (i > 0) {
                         const prevStr = dates[i - 1];
                         const prevData = appState.schedule[prevStr];
@@ -1352,19 +1539,25 @@
             }
 
             window.autoAssignSchedule = function() {
-                if (!requireSupervisorPermission()) return;
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
+                    return;
+                }
+                resetAutoLockTimer();
+
                 const dates = getActiveDateList();
                 if (dates.length === 0) return;
 
+                const targetTeams = appState.activeRole === 'admin' ? ['hydro', 'meteo'] : [appState.activeRole];
                 const hydroStaff = appState.staff.filter(s => s.team === 'hydro');
                 const meteoStaff = appState.staff.filter(s => s.team === 'meteo');
 
-                if (hydroStaff.length === 0 && meteoStaff.length === 0) {
-                    showToast('Chưa có nhân sự nào trong danh sách!', 'warning');
+                if ((targetTeams.includes('hydro') && hydroStaff.length === 0) ||
+                    (targetTeams.includes('meteo') && meteoStaff.length === 0)) {
+                    showToast('Tổ chuyên môn chưa có nhân sự nào trong danh sách!', 'warning');
                     return;
                 }
 
-                // Bộ đếm công bằng trong kỳ
                 const stats = {};
                 appState.staff.forEach(s => {
                     stats[s.id] = { total: 0, night: 0, weekend: 0, lastNightDate: null, lastDayDate: null };
@@ -1376,7 +1569,6 @@
                     const picked = [];
 
                     for (let k = 0; k < count; k++) {
-                        // Sắp xếp ứng viên ưu tiên người ít công nhất và không bị trực thông ca
                         const candidates = teamMembers.filter(m => !picked.includes(m.id));
                         if (candidates.length === 0) break;
 
@@ -1384,23 +1576,16 @@
                             const sa = stats[a.id];
                             const sb = stats[b.id];
 
-                            // Phạt nặng nếu trực Đêm hôm trước mà hôm nay trực Ngày
                             const penaltyNightToDayA = (shiftType === 'day' && prevDateStr && sa.lastNightDate === prevDateStr) ? 100 : 0;
                             const penaltyNightToDayB = (shiftType === 'day' && prevDateStr && sb.lastNightDate === prevDateStr) ? 100 : 0;
                             if (penaltyNightToDayA !== penaltyNightToDayB) return penaltyNightToDayA - penaltyNightToDayB;
 
-                            // Phạt nếu trực Ngày hôm nay rồi trực tiếp Đêm hôm nay
                             const penaltySameDayA = (shiftType === 'night' && sa.lastDayDate === dateStr) ? 80 : 0;
                             const penaltySameDayB = (shiftType === 'night' && sb.lastDayDate === dateStr) ? 80 : 0;
                             if (penaltySameDayA !== penaltySameDayB) return penaltySameDayA - penaltySameDayB;
 
-                            // Ưu tiên chia đều tổng số ca
                             if (sa.total !== sb.total) return sa.total - sb.total;
-
-                            // Nếu là cuối tuần, ưu tiên người ít trực cuối tuần hơn
                             if (wknd && sa.weekend !== sb.weekend) return sa.weekend - sb.weekend;
-
-                            // Nếu là ca đêm, ưu tiên người ít ca đêm hơn
                             if (shiftType === 'night' && sa.night !== sb.night) return sa.night - sb.night;
 
                             return Math.random() - 0.5;
@@ -1423,39 +1608,63 @@
                 dates.forEach((dateStr, idx) => {
                     const prevDateStr = idx > 0 ? dates[idx - 1] : null;
                     const dayData = appState.schedule[dateStr];
-                    dayData.shifts.hydroDay = pickStaffForShift(hydroStaff, dayData.req.hydroDay, dateStr, 'day', prevDateStr);
-                    dayData.shifts.hydroNight = pickStaffForShift(hydroStaff, dayData.req.hydroNight, dateStr, 'night', prevDateStr);
-                    dayData.shifts.meteoDay = pickStaffForShift(meteoStaff, dayData.req.meteoDay, dateStr, 'day', prevDateStr);
-                    dayData.shifts.meteoNight = pickStaffForShift(meteoStaff, dayData.req.meteoNight, dateStr, 'night', prevDateStr);
+                    if (targetTeams.includes('hydro')) {
+                        dayData.shifts.hydroDay = pickStaffForShift(hydroStaff, dayData.req.hydroDay, dateStr, 'day', prevDateStr);
+                        dayData.shifts.hydroNight = pickStaffForShift(hydroStaff, dayData.req.hydroNight, dateStr, 'night', prevDateStr);
+                    }
+                    if (targetTeams.includes('meteo')) {
+                        dayData.shifts.meteoDay = pickStaffForShift(meteoStaff, dayData.req.meteoDay, dateStr, 'day', prevDateStr);
+                        dayData.shifts.meteoNight = pickStaffForShift(meteoStaff, dayData.req.meteoNight, dateStr, 'night', prevDateStr);
+                    }
                 });
 
-                saveToStorage();
+                const syncScope = appState.activeRole === 'admin' ? 'all' : appState.activeRole;
+                saveTeamShiftsToStorage(syncScope, dates);
                 renderAll();
-                showToast('Đã phân ca tự động chia đều công và đảm bảo giãn cách ca trực!', 'success');
+
+                const scopeMsg = appState.activeRole === 'hydro'
+                    ? 'Tổ Dự báo Thủy văn (giữ nguyên Tổ Khí tượng)'
+                    : (appState.activeRole === 'meteo'
+                        ? 'Tổ Dự báo Khí tượng (giữ nguyên Tổ Thủy văn)'
+                        : 'cả 2 tổ Thủy văn & Khí tượng');
+                showToast(`Đã phân ca tự động cho ${scopeMsg}!`, 'success');
             };
 
             window.confirmClearSchedule = function() {
-                if (!requireSupervisorPermission()) return;
-                openConfirmModal(
-                    'Xóa trắng lịch trực kỳ này?',
-                    'Toàn bộ dấu tích ca Ngày (N) và ca Đêm (Đ) trong khoảng ngày đang chọn sẽ được xóa sạch. Bạn có chắc chắn không?',
-                    function() {
-                        const dates = getActiveDateList();
-                        dates.forEach(d => {
-                            if (appState.schedule[d]) {
-                                appState.schedule[d].shifts = {
-                                    hydroDay: [],
-                                    hydroNight: [],
-                                    meteoDay: [],
-                                    meteoNight: []
-                                };
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
+                    return;
+                }
+                resetAutoLockTimer();
+
+                const role = appState.activeRole;
+                const scopeTitle = role === 'hydro'
+                    ? 'Xóa trắng lịch Tổ Thủy văn?'
+                    : (role === 'meteo' ? 'Xóa trắng lịch Tổ Khí tượng?' : 'Xóa trắng lịch trực toàn kỳ?');
+                const scopeDesc = role === 'hydro'
+                    ? 'Toàn bộ ca Ngày (N) và ca Đêm (Đ) của Tổ Dự báo Thủy văn sẽ được xóa sạch. Lịch Tổ Khí tượng được giữ nguyên.'
+                    : (role === 'meteo'
+                        ? 'Toàn bộ ca Ngày (N) và ca Đêm (Đ) của Tổ Dự báo Khí tượng sẽ được xóa sạch. Lịch Tổ Thủy văn được giữ nguyên.'
+                        : 'Toàn bộ dấu tích ca Ngày (N) và ca Đêm (Đ) của cả 2 tổ trong khoảng ngày đang chọn sẽ được xóa sạch.');
+
+                openConfirmModal(scopeTitle, scopeDesc, function() {
+                    const dates = getActiveDateList();
+                    dates.forEach(d => {
+                        if (appState.schedule[d]) {
+                            if (role === 'admin' || role === 'hydro') {
+                                appState.schedule[d].shifts.hydroDay = [];
+                                appState.schedule[d].shifts.hydroNight = [];
                             }
-                        });
-                        saveToStorage();
-                        renderAll();
-                        showToast('Đã xóa trắng lịch trực kỳ hiện tại.', 'info');
-                    }
-                );
+                            if (role === 'admin' || role === 'meteo') {
+                                appState.schedule[d].shifts.meteoDay = [];
+                                appState.schedule[d].shifts.meteoNight = [];
+                            }
+                        }
+                    });
+                    saveTeamShiftsToStorage(role === 'admin' ? 'all' : role, dates);
+                    renderAll();
+                    showToast('Đã xóa trắng lịch trực theo phạm vi quyền.', 'info');
+                });
             };
 
             // ==========================================
@@ -1476,6 +1685,7 @@
                 const tfoot = document.getElementById('matrix-tfoot');
                 const dates = getActiveDateList();
                 const { warnings, totalConflicts } = detectConflicts(dates);
+                const canConfigDay = canEditGlobalSettings();
 
                 // Header ngày
                 let headHtml = '<tr class="bg-slate-100 border-b border-slate-300 text-[11px]">';
@@ -1499,8 +1709,8 @@
                     else if (isCustom) wIcon = '<i class="fa-solid fa-sliders text-purple-600 text-[9px] block mt-0.5 no-print" title="Định mức tùy chỉnh"></i>';
 
                     headHtml += `
-                        <th onclick="window.openDayConfigModal('${dateStr}')" title="${appState.isUnlocked ? 'Click chỉnh thời tiết ngày ' + formatDisplayDate(dateStr) : 'Ngày ' + formatDisplayDate(dateStr) + ' (Chế độ Xem)'}"
-                            class="py-1.5 px-1 text-center border-r border-slate-200 min-w-[34px] ${appState.isUnlocked ? 'cursor-pointer hover:bg-sky-100' : 'cursor-default'} transition ${headerBg}">
+                        <th onclick="window.openDayConfigModal('${dateStr}')" title="${canConfigDay ? 'Click chỉnh thời tiết ngày ' + formatDisplayDate(dateStr) : 'Ngày ' + formatDisplayDate(dateStr)}"
+                            class="py-1.5 px-1 text-center border-r border-slate-200 min-w-[34px] ${canConfigDay ? 'cursor-pointer hover:bg-sky-100' : 'cursor-default'} transition ${headerBg}">
                             <div class="font-bold leading-tight">${dayNum}</div>
                             <div class="text-[9px] font-medium opacity-80 leading-tight">${shortDayName}</div>
                             ${wIcon}
@@ -1525,23 +1735,31 @@
 
                 teams.forEach(team => {
                     const members = appState.staff.filter(s => s.team === team.key);
+                    const teamEditable = canEditTeam(team.key);
+                    const isCrossLocked = Boolean(appState.activeRole && !teamEditable);
 
                     const groupTr = document.createElement('tr');
                     groupTr.className = `${team.bgClass} font-bold border-b border-slate-200`;
+                    const lockTagHtml = isCrossLocked
+                        ? '<span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-200/90 text-slate-600 text-[10px] font-semibold no-print"><i class="fa-solid fa-lock text-[9px]"></i>Đang khóa tổ này</span>'
+                        : (teamEditable && appState.activeRole !== 'admin'
+                            ? '<span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold no-print"><i class="fa-solid fa-pen text-[9px]"></i>Được phép phân ca</span>'
+                            : '');
+
                     groupTr.innerHTML = `
-                        <td class="sticky-col-left ${team.bgClass} py-1.5 px-3 border-r border-slate-300 whitespace-nowrap">${team.title} (${members.length})</td>
+                        <td class="sticky-col-left ${team.bgClass} py-1.5 px-3 border-r border-slate-300 whitespace-nowrap">${team.title} (${members.length})${lockTagHtml}</td>
                         <td colspan="${dates.length + 4}" class="py-1.5 px-3"></td>
                     `;
                     tbody.appendChild(groupTr);
 
                     members.forEach((member, idx) => {
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-slate-50/90 transition group';
+                        tr.className = `transition group ${isCrossLocked ? 'team-locked-row' : 'hover:bg-slate-50/90'}`;
 
                         let statDay = 0, statNight = 0, statWknd = 0, statTotal = 0;
 
                         let rowHtml = `
-                            <td class="sticky-col-left bg-white group-hover:bg-slate-50 py-1.5 px-3 border-r border-slate-300 font-medium text-slate-800 whitespace-nowrap">
+                            <td class="sticky-col-left bg-white ${isCrossLocked ? '' : 'group-hover:bg-slate-50'} py-1.5 px-3 border-r border-slate-300 font-medium text-slate-800 whitespace-nowrap">
                                 <span class="text-slate-400 mr-1.5 text-[11px]">${idx + 1}.</span>${escapeHTML(member.name)}
                             </td>
                         `;
@@ -1571,12 +1789,17 @@
                             const cellBg = hasConflict
                                 ? 'ring-2 ring-inset ring-rose-500 bg-rose-50'
                                 : (wknd ? 'bg-amber-50/30 weekend-col' : '');
-                            const cursorClass = appState.isUnlocked ? 'cursor-pointer hover:bg-sky-50' : 'cursor-default';
+                            const cursorClass = teamEditable
+                                ? 'cursor-pointer hover:bg-sky-50'
+                                : (isCrossLocked ? 'team-locked-cell' : 'cursor-default');
+
                             const tip = hasConflict
                                 ? (warnDay || warnNight)
-                                : (appState.isUnlocked
+                                : (teamEditable
                                     ? `${member.name} • ${formatDisplayDate(dateStr)} (Click xoay vòng: Trống -> N -> Đ -> NĐ)`
-                                    : `${member.name} • ${formatDisplayDate(dateStr)} (Chế độ Xem - Mở khóa để chỉnh sửa)`);
+                                    : (isCrossLocked
+                                        ? `Đang khóa quyền tổ này (${getRoleDisplayName(appState.activeRole)})`
+                                        : `${member.name} • ${formatDisplayDate(dateStr)} (Chế độ Xem)`));
 
                             rowHtml += `
                                 <td onclick="window.cycleMatrixCell('${dateStr}', '${team.key}', '${member.id}')"
@@ -1674,7 +1897,7 @@
 
             // Click xoay vòng trên Ma trận: Trống -> N -> Đ -> NĐ -> Trống
             window.cycleMatrixCell = function(dateStr, team, staffId) {
-                if (!requireSupervisorPermission()) return;
+                if (!requireTeamPermission(team)) return;
                 const dayData = appState.schedule[dateStr];
                 if (!dayData) return;
 
@@ -1696,7 +1919,7 @@
                     dayData.shifts[nightKey].push(staffId);
                 }
 
-                saveToStorage();
+                saveTeamShiftsToStorage(team, [dateStr]);
                 renderAll();
             };
 
@@ -1705,6 +1928,7 @@
                 const tbody = document.getElementById('schedule-tbody');
                 const dates = getActiveDateList();
                 const { warnings } = detectConflicts(dates);
+                const isAdmin = canEditGlobalSettings();
 
                 tbody.innerHTML = '';
 
@@ -1744,7 +1968,7 @@
                             : '<i class="fa-solid fa-sun text-amber-500 mr-1"></i>');
 
                     tdWeather.innerHTML = `
-                        <button type="button" onclick="window.openDayConfigModal('${dateStr}')" class="no-print px-2.5 py-1 rounded-lg border text-xs font-semibold transition ${btnStyle}">
+                        <button type="button" onclick="window.openDayConfigModal('${dateStr}')" class="no-print px-2.5 py-1 rounded-lg border text-xs font-semibold transition ${btnStyle} ${isAdmin ? '' : 'cursor-default'}">
                             ${btnIcon}${dayData.weather === 'severe' ? 'Bão / Lũ' : (dayData.weather === 'custom' ? 'Tùy chỉnh' : 'Bình thường')}
                         </button>
                         <span class="hidden print-only text-[10pt] ${dayData.weather === 'severe' ? 'font-bold' : ''}">${weatherLabel}</span>
@@ -1760,8 +1984,9 @@
                     ];
 
                     shiftCols.forEach(col => {
+                        const colEditable = canEditTeam(col.team);
                         const td = document.createElement('td');
-                        td.className = `py-2 px-2.5 border-r border-slate-200 align-middle group relative ${appState.isUnlocked ? 'cursor-pointer' : 'cursor-default'}`;
+                        td.className = `py-2 px-2.5 border-r border-slate-200 align-middle group relative ${colEditable ? 'cursor-pointer' : 'cursor-default'}`;
                         td.onclick = () => window.openShiftEditor(dateStr, col.team, col.type);
 
                         const assignedIds = dayData.shifts[col.key] || [];
@@ -1771,7 +1996,7 @@
                         let html = '<div class="min-h-[30px] flex flex-col justify-center gap-1"><div class="flex flex-wrap gap-1">';
                         if (assignedIds.length === 0) {
                             html += reqCount > 0
-                                ? `<span class="text-xs text-slate-400 italic no-print">+ Chọn (${reqCount})</span>`
+                                ? `<span class="text-xs text-slate-400 italic no-print">${colEditable ? `+ Chọn (${reqCount})` : '-'}</span>`
                                 : '<span class="text-xs text-slate-300 italic">-</span>';
                         } else {
                             assignedIds.forEach((id, idx) => {
@@ -1804,7 +2029,7 @@
                         if (isShortage && assignedIds.length > 0) {
                             html += `<div class="text-[10px] text-amber-600 font-medium no-print"><i class="fa-solid fa-circle-exclamation mr-0.5"></i>Thiếu ${reqCount - assignedIds.length} người</div>`;
                         }
-                        if (appState.isUnlocked) {
+                        if (colEditable) {
                             html += '<span class="opacity-0 group-hover:opacity-100 transition absolute top-1.5 right-1.5 text-slate-400 hover:text-sky-600 text-xs no-print"><i class="fa-solid fa-pen-to-square"></i></span>';
                         }
                         html += '</div>';
@@ -1817,7 +2042,7 @@
                     const tdNote = document.createElement('td');
                     tdNote.className = 'py-1.5 px-2 align-middle';
                     const noteVal = dayData.note || '';
-                    if (appState.isUnlocked) {
+                    if (appState.activeRole) {
                         tdNote.innerHTML = `
                             <input type="text" value="${escapeHTML(noteVal)}"
                                 onchange="window.updateDayNote('${dateStr}', this.value)"
@@ -1838,10 +2063,30 @@
             }
 
             window.updateDayNote = function(dateStr, val) {
-                if (!requireSupervisorPermission()) return;
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
+                    return;
+                }
+                resetAutoLockTimer();
                 if (appState.schedule[dateStr]) {
-                    appState.schedule[dateStr].note = val.trim();
-                    saveToStorage();
+                    const cleanNote = val.trim();
+                    appState.schedule[dateStr].note = cleanNote;
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                            staff: appState.staff,
+                            presets: appState.presets,
+                            startDate: appState.startDate,
+                            endDate: appState.endDate,
+                            schedule: appState.schedule,
+                            updatedAt: Date.now()
+                        }));
+                    } catch (e) {}
+                    if (rosterDbRef && !isApplyingRemoteUpdate) {
+                        rosterDbRef.update({
+                            [`schedule/${dateStr}/note`]: cleanNote,
+                            updatedAt: Date.now()
+                        }).catch(() => {});
+                    }
                 }
             };
 
@@ -1870,7 +2115,7 @@
 
             // Modal chỉnh sửa ca trực
             window.openShiftEditor = function(dateStr, team, shiftType) {
-                if (!requireSupervisorPermission()) return;
+                if (!requireTeamPermission(team)) return;
                 editingShiftContext = { dateStr, team, shiftType };
                 const dayData = appState.schedule[dateStr];
                 const shiftKey = `${team}${shiftType === 'day' ? 'Day' : 'Night'}`;
@@ -1933,20 +2178,21 @@
             window.saveShiftAssignment = function() {
                 if (!editingShiftContext) return;
                 const { dateStr, team, shiftType } = editingShiftContext;
+                if (!requireTeamPermission(team)) return;
                 const shiftKey = `${team}${shiftType === 'day' ? 'Day' : 'Night'}`;
 
                 const checkboxes = document.querySelectorAll('#shift-modal-staff-list input[type="checkbox"]:checked');
                 appState.schedule[dateStr].shifts[shiftKey] = Array.from(checkboxes).map(cb => cb.value);
 
-                saveToStorage();
+                saveTeamShiftsToStorage(team, [dateStr]);
                 renderAll();
                 window.closeModal('shift-modal');
                 showToast('Đã cập nhật phân công ca trực.', 'success');
             };
 
-            // Modal cấu hình thời tiết ngày
+            // Modal cấu hình thời tiết ngày (Chỉ Admin)
             window.openDayConfigModal = function(dateStr) {
-                if (!requireSupervisorPermission()) return;
+                if (!requireAdminPermission('chế độ thời tiết ngày')) return;
                 editingDayConfigDate = dateStr;
                 const dayData = appState.schedule[dateStr];
                 document.getElementById('day-config-subtitle').textContent = `${getVietnameseDayName(dateStr)}, ngày ${formatDisplayDate(dateStr)}`;
@@ -1982,7 +2228,7 @@
             };
 
             window.saveDayConfig = function() {
-                if (!editingDayConfigDate) return;
+                if (!editingDayConfigDate || !requireAdminPermission('chế độ thời tiết ngày')) return;
                 const d = appState.schedule[editingDayConfigDate];
                 d.weather = modalSelectedWeatherType;
                 d.req = {
@@ -1992,14 +2238,14 @@
                     meteoNight: Math.max(0, parseInt(document.getElementById('cfg-meteo-night').value, 10) || 0)
                 };
 
-                saveToStorage();
+                saveFullStateToStorage();
                 renderAll();
                 window.closeModal('day-config-modal');
                 showToast(`Đã cập nhật chế độ thời tiết ngày ${formatDisplayDate(editingDayConfigDate)}.`, 'success');
             };
 
             window.applyBulkWeather = function(type) {
-                if (!requireSupervisorPermission()) return;
+                if (!requireAdminPermission('trạng thái thời tiết cả kỳ')) return;
                 const dates = getActiveDateList();
                 const preset = appState.presets[type];
                 if (!preset) return;
@@ -2011,14 +2257,14 @@
                     }
                 });
 
-                saveToStorage();
+                saveFullStateToStorage();
                 renderAll();
                 showToast(`Đã áp dụng chế độ "${type === 'severe' ? 'Bão / Lũ tăng cường' : 'Bình thường'}" cho toàn kỳ.`, 'success');
             };
 
-            // Modal Quản lý Nhân sự
+            // Modal Quản lý Nhân sự (Chỉ Admin)
             window.openStaffModal = function() {
-                if (!requireSupervisorPermission()) return;
+                if (!requireAdminPermission('danh sách nhân sự')) return;
                 renderStaffModalLists();
                 document.getElementById('staff-modal').classList.remove('hidden');
             };
@@ -2047,6 +2293,7 @@
             }
 
             window.addStaffMember = function() {
+                if (!requireAdminPermission('danh sách nhân sự')) return;
                 const nameInput = document.getElementById('new-staff-name');
                 const teamSelect = document.getElementById('new-staff-team');
                 const name = nameInput.value.trim();
@@ -2057,25 +2304,27 @@
                 const newId = 'st_' + Date.now();
                 appState.staff.push({ id: newId, name: name, team: teamSelect.value });
                 nameInput.value = '';
-                saveToStorage();
+                saveFullStateToStorage();
                 renderStaffModalLists();
                 renderAll();
                 showToast(`Đã thêm cán bộ ${name}.`, 'success');
             };
 
             window.renameStaffMember = function(id, newName) {
+                if (!requireAdminPermission('danh sách nhân sự')) return;
                 const trimmed = newName.trim();
                 if (!trimmed) return;
                 const staff = appState.staff.find(s => s.id === id);
                 if (staff) {
                     staff.name = trimmed;
-                    saveToStorage();
+                    saveFullStateToStorage();
                     renderAll();
                     showToast('Đã cập nhật tên cán bộ.', 'info');
                 }
             };
 
             window.removeStaffMember = function(id) {
+                if (!requireAdminPermission('danh sách nhân sự')) return;
                 const staff = appState.staff.find(s => s.id === id);
                 if (!staff) return;
                 openConfirmModal(
@@ -2090,7 +2339,7 @@
                             sh.meteoDay = sh.meteoDay.filter(x => x !== id);
                             sh.meteoNight = sh.meteoNight.filter(x => x !== id);
                         });
-                        saveToStorage();
+                        saveFullStateToStorage();
                         renderStaffModalLists();
                         renderAll();
                         showToast(`Đã xóa đồng chí ${staff.name}.`, 'info');
@@ -2099,12 +2348,13 @@
             };
 
             window.resetDefaultStaff = function() {
+                if (!requireAdminPermission('danh sách nhân sự')) return;
                 openConfirmModal(
                     'Khôi phục danh sách mặc định?',
                     'Danh sách nhân sự sẽ trở về 10 cán bộ chuẩn ban đầu (4 Thủy văn, 6 Khí tượng).',
                     function() {
                         appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
-                        saveToStorage();
+                        saveFullStateToStorage();
                         renderStaffModalLists();
                         renderAll();
                         showToast('Đã khôi phục danh sách 10 cán bộ mặc định.', 'success');
@@ -2112,9 +2362,9 @@
                 );
             };
 
-            // Modal Định mức mặc định
+            // Modal Định mức mặc định (Chỉ Admin)
             window.openPresetsModal = function() {
-                if (!requireSupervisorPermission()) return;
+                if (!requireAdminPermission('định mức quân số')) return;
                 document.getElementById('preset-norm-hd').value = appState.presets.normal.hydroDay;
                 document.getElementById('preset-norm-hn').value = appState.presets.normal.hydroNight;
                 document.getElementById('preset-norm-md').value = appState.presets.normal.meteoDay;
@@ -2129,6 +2379,7 @@
             };
 
             window.saveWeatherPresets = function() {
+                if (!requireAdminPermission('định mức quân số')) return;
                 appState.presets = {
                     normal: {
                         hydroDay: Math.max(0, parseInt(document.getElementById('preset-norm-hd').value, 10) || 0),
@@ -2143,7 +2394,7 @@
                         meteoNight: Math.max(0, parseInt(document.getElementById('preset-sev-mn').value, 10) || 0)
                     }
                 };
-                saveToStorage();
+                saveFullStateToStorage();
                 window.closeModal('presets-modal');
                 showToast('Đã lưu định mức quân số tiêu chuẩn.', 'success');
             };
@@ -2178,11 +2429,12 @@
                     return s ? s.name : '';
                 }).filter(Boolean).join('; ');
 
-                // BOM UTF-8 chuẩn tiếng Việt cho Excel
-                let csv = '\uFEFF';
-                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV\n';
+                let csv = '﻿';
+                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV
+';
                 const dateHeaders = dates.map(d => formatDisplayDate(d).slice(0, 5));
-                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '\n';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '
+';
 
                 appState.staff.forEach((s, idx) => {
                     const teamLabel = s.team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
@@ -2203,11 +2455,15 @@
                         return '';
                     });
 
-                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '\n';
+                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '
+';
                 });
 
-                csv += '\nBẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO\n';
-                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú\n';
+                csv += '
+BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO
+';
+                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú
+';
 
                 dates.forEach(dateStr => {
                     const d = appState.schedule[dateStr];
@@ -2221,7 +2477,8 @@
                         `"${getNames(d.shifts.meteoDay)}"`,
                         `"${getNames(d.shifts.meteoNight)}"`,
                         `"${(d.note || '').replace(/"/g, '""')}"`
-                    ].join(',') + '\n';
+                    ].join(',') + '
+';
                 });
 
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2238,7 +2495,7 @@
             };
 
             // ==========================================
-            // 8. KHỞI TẠO ỨNG DỤNG AN TOÀN
+            // 8. KHỞI TẠO ỨNG DỤNG & ĐỒNG BỘ FIREBASE AN TOÀN
             // ==========================================
             function setupFirebaseRealtimeListeners() {
                 if (!firebaseDb || !rosterDbRef) {
@@ -2246,7 +2503,6 @@
                     return;
                 }
 
-                // Theo dõi trạng thái kết nối mạng với Firebase
                 firebaseDb.ref('.info/connected').on('value', (snap) => {
                     if (snap.val() === true) {
                         updateSyncBadge('connected', 'Đã đồng bộ đám mây');
@@ -2255,13 +2511,28 @@
                     }
                 });
 
-                // Lắng nghe thay đổi mật khẩu Trưởng ca trên đám mây
-                if (passDbRef) {
-                    passDbRef.on('value', (snap) => {
+                // Lắng nghe mật khẩu phân quyền 3 vai trò trên đám mây
+                if (rolesAuthDbRef) {
+                    rolesAuthDbRef.on('value', (snap) => {
+                        const cloudRoles = snap.val();
+                        if (cloudRoles && typeof cloudRoles === 'object') {
+                            appState.rolePasswords = {
+                                hydro: (cloudRoles.hydro && cloudRoles.hydro.length >= 4) ? cloudRoles.hydro : appState.rolePasswords.hydro,
+                                meteo: (cloudRoles.meteo && cloudRoles.meteo.length >= 4) ? cloudRoles.meteo : appState.rolePasswords.meteo,
+                                admin: (cloudRoles.admin && cloudRoles.admin.length >= 4) ? cloudRoles.admin : appState.rolePasswords.admin
+                            };
+                            try { localStorage.setItem(AUTH_PASS_KEY, JSON.stringify(appState.rolePasswords)); } catch (e) {}
+                        }
+                    });
+                }
+
+                // Tương thích ngược với khóa mật khẩu admin cũ
+                if (legacyPassDbRef) {
+                    legacyPassDbRef.on('value', (snap) => {
                         const cloudPass = snap.val();
                         if (typeof cloudPass === 'string' && cloudPass.length >= 4) {
-                            appState.supervisorPass = cloudPass;
-                            try { localStorage.setItem(AUTH_PASS_KEY, cloudPass); } catch (e) {}
+                            appState.rolePasswords.admin = cloudPass;
+                            try { localStorage.setItem(AUTH_PASS_KEY, JSON.stringify(appState.rolePasswords)); } catch (e) {}
                         }
                     });
                 }
@@ -2270,10 +2541,9 @@
                 rosterDbRef.on('value', (snapshot) => {
                     const cloudData = snapshot.val();
                     if (!cloudData) {
-                        // Nếu đám mây chưa có dữ liệu lần đầu, đẩy dữ liệu khởi tạo lên
                         if (!hasInitialCloudSync) {
                             hasInitialCloudSync = true;
-                            saveToStorage();
+                            saveFullStateToStorage();
                         }
                         return;
                     }
@@ -2320,12 +2590,12 @@
 
             function initApp() {
                 loadFromStorage();
-                loadPasswordFromStorage();
+                loadPasswordsFromStorage();
 
                 if (!appState.startDate || !appState.endDate) {
                     const today = new Date();
                     const end = new Date(today);
-                    end.setDate(today.getDate() + 14); // Mặc định 15 ngày
+                    end.setDate(today.getDate() + 14);
                     appState.startDate = toISODate(today);
                     appState.endDate = toISODate(end);
                 }
