@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Phân Ca Trực Dự Báo Khí Tượng Thủy Văn</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase Realtime Database SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Thanh cuộn gọn gàng */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Cố định cột trái & phải trong bảng Ma trận */
+        .sticky-col-left {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        .sticky-col-right {
+            position: sticky;
+            right: 0;
+            z-index: 10;
+        }
+
+        /* Định dạng In Ấn chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP) */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-family: "Times New Roman", Times, serif !important;
+                font-size: 11pt !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .sticky-col-left, .sticky-col-right {
+                position: static !important;
+            }
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+            table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+                font-family: "Times New Roman", Times, serif !important;
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            th, td {
+                border: 1px solid #000000 !important;
+                padding: 3px 4px !important;
+                color: #000000 !important;
+            }
+            .weekend-col, .weekend-row {
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .badge-print {
+                border: none !important;
+                background: transparent !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                font-weight: normal !important;
+                display: inline !important;
+            }
+            .matrix-cell-print {
+                font-weight: bold !important;
+                font-size: 9pt !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                color: #000000 !important;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 0.8cm;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Thông báo nổi (Toast) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 no-print pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-sky-900 via-blue-900 to-indigo-950 text-white shadow-md no-print">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="bg-sky-500/20 p-2.5 rounded-xl border border-sky-400/30">
+                        <i class="fa-solid fa-cloud-sun-rain text-2xl text-sky-300"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight">PHÂN CA TRỰC DỰ BÁO KHÍ TƯỢNG THỦY VĂN</h1>
+                        <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                            <p class="text-xs text-sky-200">Tổ Dự báo Thủy văn & Tổ Dự báo Khí tượng</p>
+                            <span id="firebase-sync-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30">
+                                <i class="fa-solid fa-cloud-arrow-up animate-pulse"></i>
+                                <span>Đang kết nối đám mây...</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Các nút chức năng chính -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Khu vực trạng thái phân quyền Trưởng ca -->
+                    <div id="auth-locked-bar" class="flex items-center gap-1.5 bg-amber-500/20 border border-amber-300/40 px-2.5 py-1.5 rounded-xl">
+                        <span class="text-xs text-amber-200 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye"></i>
+                            <span class="hidden sm:inline">Chế độ Xem</span>
+                        </span>
+                        <button type="button" onclick="window.openUnlockModal()" class="ml-1 px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-900 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-lock-open"></i>
+                            <span>Mở khóa Phân ca</span>
+                        </button>
+                    </div>
+
+                    <div id="auth-unlocked-bar" class="hidden flex items-center gap-1.5 bg-emerald-500/25 border border-emerald-300/40 px-2.5 py-1.5 rounded-xl">
+                        <span class="text-xs text-emerald-200 font-semibold flex items-center gap-1.5" title="Tự động khóa sau 15 phút không thao tác">
+                            <i class="fa-solid fa-shield-halved text-emerald-300"></i>
+                            <span>Quyền Trưởng ca</span>
+                            <span id="auto-lock-timer" class="text-[10px] bg-emerald-950/50 px-1.5 py-0.5 rounded font-mono text-emerald-200">15:00</span>
+                        </span>
+                        <button type="button" onclick="window.openChangePassModal()" title="Đổi mật khẩu Trưởng ca" class="ml-1 px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
+                            <i class="fa-solid fa-key"></i>
+                            <span class="hidden md:inline">Đổi MK</span>
+                        </button>
+                        <button type="button" onclick="window.lockShiftControl()" title="Khóa quyền chỉnh sửa" class="px-2 py-1 bg-rose-500/80 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Khóa lại</span>
+                        </button>
+                    </div>
+
+                    <button type="button" id="btn-manage-staff" onclick="window.openStaffModal()" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 border border-white/15">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <span>Nhân sự (<span id="total-staff-badge">10</span>)</span>
+                    </button>
+                    <button type="button" id="btn-manage-presets" onclick="window.openPresetsModal()" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 border border-white/15">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Định mức ca</span>
+                    </button>
+                    <button type="button" onclick="window.exportToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Xuất Excel</span>
+                    </button>
+                    <button type="button" onclick="window.printSchedule()" class="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-print"></i>
+                        <span id="btn-print-label">In Bảng Ma Trận</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Nội dung chính -->
+    <main class="flex-grow max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4 print-container">
+
+        <!-- Tiêu đề khi In (Chuẩn hành chính) -->
+        <div class="hidden print-only mb-4">
+            <div class="flex justify-between items-start mb-3">
+                <div class="text-center w-5/12">
+                    <p class="uppercase text-[11pt]">ĐÀI KHÍ TƯỢNG THỦY VĂN TỈNH</p>
+                    <p class="font-bold uppercase text-[11pt] underline underline-offset-4">PHÒNG DỰ BÁO KTTV</p>
+                </div>
+                <div class="text-center w-7/12">
+                    <p class="font-bold uppercase text-[11pt]">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                    <p class="font-bold text-[12pt] underline underline-offset-4">Độc lập - Tự do - Hạnh phúc</p>
+                </div>
+            </div>
+            <div class="text-center my-3">
+                <h2 id="print-doc-title" class="text-[14pt] font-bold uppercase">BẢNG TÍCH PHÂN CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG</h2>
+                <p id="print-period-subtitle" class="text-[11pt] italic mt-0.5">Từ ngày ... đến ngày ...</p>
+            </div>
+        </div>
+
+        <!-- Thanh điều khiển & Chuyển Tab (Không in) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3.5 no-print">
+            <!-- Hàng 1: 2 Tab chính + Chọn thời gian -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                <!-- 2 Tab chuyển đổi -->
+                <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button type="button" id="tab-btn-matrix" onclick="window.switchViewTab('matrix')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-table-cells text-sky-600"></i>
+                        <span>1. Ma trận Tích phân ca (Chấm trực)</span>
+                    </button>
+                    <button type="button" id="tab-btn-report" onclick="window.switchViewTab('report')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature text-indigo-600"></i>
+                        <span>2. Bảng Tổng hợp Báo cáo Lãnh đạo</span>
+                    </button>
+                </div>
+
+                <!-- Chọn khoảng ngày lập lịch -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                        <button type="button" onclick="window.setQuickRange(7)" id="btn-range-7" class="px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:bg-white transition">7 ngày</button>
+                        <button type="button" onclick="window.setQuickRange(15)" id="btn-range-15" class="px-2.5 py-1 rounded-lg font-semibold bg-white text-sky-700 shadow-sm transition">15 ngày</button>
+                        <button type="button" onclick="window.setQuickRange('month')" id="btn-range-month" class="px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:bg-white transition">Cả tháng</button>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
+                        <span class="text-xs text-slate-500 font-medium">Từ:</span>
+                        <input type="date" id="input-start-date" onchange="window.handleCustomDateChange()" class="bg-transparent text-xs font-semibold text-slate-700 outline-none">
+                        <span class="text-xs text-slate-400">→</span>
+                        <input type="date" id="input-end-date" onchange="window.handleCustomDateChange()" class="bg-transparent text-xs font-semibold text-slate-700 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hàng 2: Hướng dẫn ký hiệu & Nút thao tác nhanh -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div id="matrix-guide-bar" class="flex flex-wrap items-center gap-2.5 text-xs text-slate-600">
+                    <span class="font-semibold text-slate-700"><i class="fa-solid fa-hand-pointer text-sky-600 mr-1"></i>Ký hiệu trực:</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-300">N</span><span>Ca Ngày</span>
+                    <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-900 font-bold border border-indigo-300">Đ</span><span>Ca Đêm</span>
+                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-900 font-bold border border-rose-300">NĐ</span><span>Ngày & Đêm</span>
+                    <span class="text-slate-300">|</span>
+                    <span id="readonly-hint-badge" class="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                        <i class="fa-solid fa-lock mr-1"></i>Đang khóa chỉnh sửa (Chỉ xem)
+                    </span>
+                    <span id="unlocked-hint-badge" class="hidden text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-medium">
+                        <i class="fa-solid fa-lock-open mr-1"></i>Click ô ngày để xoay vòng ca trực
+                    </span>
+                </div>
+
+                <div id="report-guide-bar" class="hidden flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <span class="font-semibold text-indigo-800"><i class="fa-solid fa-circle-check mr-1"></i>Bảng báo cáo Lãnh đạo:</span>
+                    <span>Tự động đồng bộ từ Ma trận Tích phân ca. Mở khóa Trưởng ca để chỉnh trực tiếp hoặc thêm ghi chú.</span>
+                </div>
+
+                <div id="supervisor-toolbar-actions" class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <span class="text-[11px] font-semibold text-slate-500 pl-2">Cả kỳ:</span>
+                        <button type="button" onclick="window.applyBulkWeather('normal')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 transition">
+                            <i class="fa-solid fa-sun text-amber-500 mr-1"></i>Bình thường
+                        </button>
+                        <button type="button" onclick="window.applyBulkWeather('severe')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition">
+                            <i class="fa-solid fa-hurricane text-rose-500 mr-1"></i>Bão / Lũ
+                        </button>
+                    </div>
+
+                    <button type="button" onclick="window.autoAssignSchedule()" class="px-3.5 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Phân ca tự động</span>
+                    </button>
+
+                    <button type="button" onclick="window.confirmClearSchedule()" class="px-3 py-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 text-xs font-semibold transition flex items-center gap-1.5" title="Xóa trắng lịch trực kỳ này">
+                        <i class="fa-solid fa-eraser"></i>
+                        <span>Xóa trắng lịch</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh cảnh báo quân số / trực thông ca -->
+            <div id="conflict-summary-badge" class="hidden flex items-center justify-between bg-rose-50 border border-rose-200 text-rose-800 px-3.5 py-2 rounded-xl text-xs">
+                <div class="flex items-center gap-2 font-semibold">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 text-sm"></i>
+                    <span id="conflict-count-text">Phát hiện cảnh báo phân ca!</span>
+                </div>
+                <span class="text-rose-600 hidden sm:inline">Kiểm tra các ô viền đỏ hoặc hàng quân số bên dưới</span>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAB 1: MA TRẬN TÍCH PHÂN CA (CHẤM TRỰC NHANH)                         -->
+        <!-- ===================================================================== -->
+        <section id="view-matrix-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="matrix-table" class="w-full text-left border-collapse select-none">
+                    <thead id="matrix-thead"></thead>
+                    <tbody id="matrix-tbody" class="divide-y divide-slate-200 text-xs"></tbody>
+                    <tfoot id="matrix-tfoot" class="border-t-2 border-slate-300 bg-slate-50 text-xs"></tfoot>
+                </table>
+            </div>
+            <div class="hidden print-only mt-2 text-[10pt] italic">
+                <strong>Ghi chú ký hiệu:</strong> <strong>N</strong>: Trực Ca Ngày (07h00 - 19h00); <strong>Đ</strong>: Trực Ca Đêm (19h00 - 07h00); <strong>NĐ</strong>: Trực cả Ngày & Đêm (Tăng cường bão, lũ); Ô nền xám: Thứ Bảy, Chủ Nhật.
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAB 2: BẢNG TỔNG HỢP BÁO CÁO LÃNH ĐẠO                                 -->
+        <!-- ===================================================================== -->
+        <section id="view-report-container" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-xs uppercase tracking-wider border-b border-slate-200">
+                            <th rowspan="2" class="py-3 px-3 bg-slate-100 text-slate-700 font-bold border-r border-slate-200 w-28 text-center">Ngày / Thứ</th>
+                            <th rowspan="2" class="py-3 px-2 bg-slate-100 text-slate-700 font-bold border-r border-slate-200 w-36 text-center">Trạng thái TT</th>
+                            <th colspan="2" class="py-2 px-3 bg-sky-50 text-sky-900 font-bold border-r border-slate-200 text-center">
+                                <i class="fa-solid fa-water mr-1.5 text-sky-600 no-print"></i>TỔ DỰ BÁO THỦY VĂN
+                            </th>
+                            <th colspan="2" class="py-2 px-3 bg-indigo-50 text-indigo-900 font-bold border-r border-slate-200 text-center">
+                                <i class="fa-solid fa-wind mr-1.5 text-indigo-600 no-print"></i>TỔ DỰ BÁO KHÍ TƯỢNG
+                            </th>
+                            <th rowspan="2" class="py-3 px-3 bg-slate-100 text-slate-700 font-bold w-44 text-center">Ghi chú</th>
+                        </tr>
+                        <tr class="text-xs font-semibold border-b border-slate-300">
+                            <th class="py-2 px-3 bg-sky-50/70 text-sky-800 border-r border-slate-200 w-1/5">Ca Ngày (07h-19h)</th>
+                            <th class="py-2 px-3 bg-sky-100/50 text-sky-900 border-r border-slate-200 w-1/5">Ca Đêm (19h-07h)</th>
+                            <th class="py-2 px-3 bg-indigo-50/70 text-indigo-800 border-r border-slate-200 w-1/5">Ca Ngày (07h-19h)</th>
+                            <th class="py-2 px-3 bg-indigo-100/50 text-indigo-900 border-r border-slate-200 w-1/5">Ca Đêm (19h-07h)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-tbody" class="divide-y divide-slate-200 text-sm"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Khung ký duyệt khi In (3 bên chuẩn cơ quan) -->
+        <div class="hidden print-only mt-6 pt-2">
+            <div class="grid grid-cols-3 gap-4 text-center text-[11pt]">
+                <div>
+                    <p class="font-bold uppercase">TỔ TRƯỞNG TỔ DỰ BÁO THỦY VĂN</p>
+                    <p class="text-[10pt] italic">(Ký và ghi rõ họ tên)</p>
+                    <div class="h-20"></div>
+                </div>
+                <div>
+                    <p class="font-bold uppercase">TỔ TRƯỞNG TỔ DỰ BÁO KHÍ TƯỢNG</p>
+                    <p class="text-[10pt] italic">(Ký và ghi rõ họ tên)</p>
+                    <div class="h-20"></div>
+                </div>
+                <div>
+                    <p class="italic text-[10pt] mb-0.5">Ngày ...... tháng ...... năm 20....</p>
+                    <p class="font-bold uppercase">LÃNH ĐẠO PHÒNG DUYỆT</p>
+                    <p class="text-[10pt] italic">(Ký, đóng dấu)</p>
+                    <div class="h-20"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 no-print mt-auto">
+        <p>Hệ thống Phân Ca Trực Dự Báo Khí Tượng Thủy Văn • Tự động đồng bộ thời gian thực qua Firebase Realtime Database.</p>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- CÁC MODAL CHỨC NĂNG                                                   -->
+    <!-- ===================================================================== -->
+
+    <!-- 1. Modal Chỉnh sửa ca trực nhanh trên Tab Báo cáo -->
+    <div id="shift-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div id="shift-modal-header" class="px-5 py-3.5 bg-sky-700 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base" id="shift-modal-title">Phân công ca trực</h3>
+                    <p class="text-xs opacity-90" id="shift-modal-subtitle">Ngày ...</p>
+                </div>
+                <button type="button" onclick="window.closeModal('shift-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <span class="text-slate-600">Định mức yêu cầu:</span>
+                    <span class="font-bold text-slate-800" id="shift-modal-req">1 người trực</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-2">Chọn cán bộ trực ca này</label>
+                    <div id="shift-modal-staff-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+                <div id="shift-modal-warning" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-600"></i>
+                    <span id="shift-modal-warning-text"></span>
+                </div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onclick="window.closeModal('shift-modal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200 transition">Hủy</button>
+                <button type="button" onclick="window.saveShiftAssignment()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition">Lưu phân công</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Modal Cấu hình thời tiết từng ngày -->
+    <div id="day-config-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base">Cấu hình trực theo thời tiết</h3>
+                    <p class="text-xs text-slate-300" id="day-config-subtitle">Ngày ...</p>
+                </div>
+                <button type="button" onclick="window.closeModal('day-config-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-2">Chế độ thời tiết</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="window.selectWeatherTypeInModal('normal')" id="btn-wtype-normal" class="py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition">
+                            <i class="fa-solid fa-sun text-amber-500 text-base"></i>
+                            <span>Bình thường</span>
+                        </button>
+                        <button type="button" onclick="window.selectWeatherTypeInModal('severe')" id="btn-wtype-severe" class="py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition">
+                            <i class="fa-solid fa-hurricane text-rose-500 text-base"></i>
+                            <span>Bão / Lũ</span>
+                        </button>
+                        <button type="button" onclick="window.selectWeatherTypeInModal('custom')" id="btn-wtype-custom" class="py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition">
+                            <i class="fa-solid fa-sliders text-sky-600 text-base"></i>
+                            <span>Tùy chỉnh</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2 border-t border-slate-100">
+                    <p class="text-xs font-semibold text-slate-700">Định mức quân số yêu cầu trong ngày:</p>
+                    <div class="bg-sky-50/70 p-3 rounded-xl border border-sky-100">
+                        <div class="text-xs font-bold text-sky-900 mb-2"><i class="fa-solid fa-water text-sky-600 mr-1"></i>Tổ Dự báo Thủy văn</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-1">Ca Ngày (người)</label>
+                                <input type="number" id="cfg-hydro-day" min="0" max="10" class="w-full rounded-lg border-slate-300 border px-2.5 py-1.5 text-sm font-semibold text-center bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-1">Ca Đêm (người)</label>
+                                <input type="number" id="cfg-hydro-night" min="0" max="10" class="w-full rounded-lg border-slate-300 border px-2.5 py-1.5 text-sm font-semibold text-center bg-white">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
+                        <div class="text-xs font-bold text-indigo-900 mb-2"><i class="fa-solid fa-wind text-indigo-600 mr-1"></i>Tổ Dự báo Khí tượng</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-1">Ca Ngày (người)</label>
+                                <input type="number" id="cfg-meteo-day" min="0" max="10" class="w-full rounded-lg border-slate-300 border px-2.5 py-1.5 text-sm font-semibold text-center bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-1">Ca Đêm (người)</label>
+                                <input type="number" id="cfg-meteo-night" min="0" max="10" class="w-full rounded-lg border-slate-300 border px-2.5 py-1.5 text-sm font-semibold text-center bg-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onclick="window.closeModal('day-config-modal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200 transition">Hủy</button>
+                <button type="button" onclick="window.saveDayConfig()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white shadow-sm transition">Áp dụng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Modal Quản lý Nhân sự (Thêm / Sửa / Xóa) -->
+    <div id="staff-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear text-sky-400"></i>
+                    <h3 class="font-bold text-base">Quản Lý Danh Sách Cán Bộ Dự Báo</h3>
+                </div>
+                <button type="button" onclick="window.closeModal('staff-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-5">
+                <!-- Thêm cán bộ -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <h4 class="text-xs font-bold uppercase text-slate-600 mb-2.5">Thêm cán bộ mới</h4>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="new-staff-name" placeholder="Nhập họ và tên cán bộ..." class="flex-1 rounded-xl border-slate-300 border px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                        <select id="new-staff-team" class="rounded-xl border-slate-300 border px-3 py-2 text-sm bg-white font-medium outline-none">
+                            <option value="hydro">Tổ Dự báo Thủy văn</option>
+                            <option value="meteo">Tổ Dự báo Khí tượng</option>
+                        </select>
+                        <button type="button" onclick="window.addStaffMember()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Thêm
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Danh sách 2 tổ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-sky-200 rounded-xl overflow-hidden">
+                        <div class="bg-sky-50 px-3.5 py-2 border-b border-sky-200 font-bold text-sky-900 text-xs flex justify-between items-center">
+                            <span>TỔ DỰ BÁO THỦY VĂN</span>
+                            <span id="modal-hydro-count" class="bg-sky-200 text-sky-800 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <ul id="modal-hydro-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
+                    </div>
+
+                    <div class="border border-indigo-200 rounded-xl overflow-hidden">
+                        <div class="bg-indigo-50 px-3.5 py-2 border-b border-indigo-200 font-bold text-indigo-900 text-xs flex justify-between items-center">
+                            <span>TỔ DỰ BÁO KHÍ TƯỢNG</span>
+                            <span id="modal-meteo-count" class="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <ul id="modal-meteo-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                <button type="button" onclick="window.resetDefaultStaff()" class="text-xs text-slate-500 hover:text-rose-600 underline">Khôi phục danh sách mặc định</button>
+                <button type="button" onclick="window.closeModal('staff-modal')" class="px-5 py-2 rounded-xl text-sm font-semibold bg-slate-800 text-white hover:bg-slate-700 transition">Hoàn tất</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Modal Định mức ca mặc định -->
+    <div id="presets-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-sky-400"></i>
+                    <h3 class="font-bold text-base">Định Mức Quân Số Trực Tiêu Chuẩn</h3>
+                </div>
+                <button type="button" onclick="window.closeModal('presets-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4 text-sm">
+                <p class="text-xs text-slate-500">Thiết lập định mức số người trực mặc định cho chế độ <strong>Bình thường</strong> và <strong>Bão / Lũ tăng cường</strong>.</p>
+                
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-2.5">
+                    <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-sun text-amber-500"></i> Trạng thái Bình thường
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <span class="font-semibold text-sky-800 block mb-1">Tổ Thủy văn:</span>
+                            <div class="flex items-center gap-2">
+                                <span>Ngày:</span><input type="number" id="preset-norm-hd" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                                <span>Đêm:</span><input type="number" id="preset-norm-hn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Khí tượng:</span>
+                            <div class="flex items-center gap-2">
+                                <span>Ngày:</span><input type="number" id="preset-norm-md" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                                <span>Đêm:</span><input type="number" id="preset-norm-mn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/50 space-y-2.5">
+                    <div class="font-bold text-rose-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-hurricane text-rose-600"></i> Trạng thái Bão / Lũ tăng cường
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <span class="font-semibold text-sky-800 block mb-1">Tổ Thủy văn:</span>
+                            <div class="flex items-center gap-2">
+                                <span>Ngày:</span><input type="number" id="preset-sev-hd" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                                <span>Đêm:</span><input type="number" id="preset-sev-hn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Khí tượng:</span>
+                            <div class="flex items-center gap-2">
+                                <span>Ngày:</span><input type="number" id="preset-sev-md" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                                <span>Đêm:</span><input type="number" id="preset-sev-mn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onclick="window.closeModal('presets-modal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200 transition">Hủy</button>
+                <button type="button" onclick="window.saveWeatherPresets()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition">Lưu định mức</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Modal Xác nhận hành động (Thay thế confirm() để không lỗi iframe) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-200">
+            <div class="p-5 text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-800" id="confirm-modal-title">Xác nhận thao tác</h3>
+                <p class="text-xs text-slate-600 leading-relaxed" id="confirm-modal-msg">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-center gap-2.5">
+                <button type="button" onclick="window.closeModal('confirm-modal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">Hủy bỏ</button>
+                <button type="button" id="confirm-modal-ok-btn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition">Đồng ý thực hiện</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Modal Mở khóa Quyền Trưởng ca -->
+    <div id="unlock-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+            <div class="px-5 py-4 bg-gradient-to-r from-sky-900 to-indigo-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Xác Thực Trưởng Ca Trực</h3>
+                        <p class="text-[11px] text-sky-200">Mở khóa quyền lập và điều chỉnh lịch trực</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.closeModal('unlock-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="window.handleUnlockSubmit(event)" class="p-5 space-y-4">
+                <div>
+                    <label for="unlock-password-input" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nhập mật khẩu Trưởng ca</label>
+                    <div class="relative">
+                        <input type="password" id="unlock-password-input" autocomplete="off" placeholder="Nhập mật khẩu..."
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none">
+                        <button type="button" onclick="window.togglePasswordVisibility('unlock-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                    <p id="unlock-error-msg" class="hidden text-xs text-rose-600 font-semibold mt-1.5 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>Mật khẩu không chính xác. Vui lòng thử lại!</span>
+                    </p>
+                </div>
+
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 space-y-1">
+                    <div class="font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-sky-600"></i>
+                        <span>Thông tin truy cập mặc định:</span>
+                    </div>
+                    <p class="text-[11px] text-sky-800">Mật khẩu mặc định ban đầu là: <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kttv2026</code> (Có thể đổi mật khẩu sau khi mở khóa).</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <button type="button" onclick="window.confirmResetDefaultPassword()" class="text-[11px] text-slate-400 hover:text-rose-600 underline">Đặt lại mật khẩu gốc?</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="window.closeModal('unlock-modal')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Hủy</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-lock-open"></i>
+                            <span>Mở khóa</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. Modal Đổi mật khẩu Trưởng ca -->
+    <div id="change-pass-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+            <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    <h3 class="font-bold text-sm">Đổi Mật Khẩu Trưởng Ca</h3>
+                </div>
+                <button type="button" onclick="window.closeModal('change-pass-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="window.handleChangePassSubmit(event)" class="p-5 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu hiện tại</label>
+                    <input type="password" id="cp-old-pass" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu mới (tối thiểu 4 ký tự)</label>
+                    <input type="password" id="cp-new-pass" required minlength="4" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nhập lại mật khẩu mới</label>
+                    <input type="password" id="cp-confirm-pass" required minlength="4" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500">
+                </div>
+                <p id="cp-error-msg" class="hidden text-xs text-rose-600 font-semibold"></p>
+                <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                    <button type="button" onclick="window.closeModal('change-pass-modal')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Hủy</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition">Lưu mật khẩu mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT HOÀN CHỈNH & AN TOÀN TUYỆT ĐỐI                             -->
+    <!-- ===================================================================== -->
+    <script>
+        (function() {
+            'use strict';
+
+            const STORAGE_KEY = 'kttv_forecast_roster_v3';
+            const AUTH_PASS_KEY = 'kttv_supervisor_pass_v1';
+            const DEFAULT_SUPERVISOR_PASS = 'kttv2026';
+            const AUTO_LOCK_DURATION_SEC = 15 * 60; // Tự động khóa sau 15 phút không thao tác
+
+            // Cấu hình Firebase Realtime Database (Dự án: Lich truc KTTV TH)
+            const FIREBASE_CONFIG = {
+                apiKey: "AIzaSyCTYKV8uo_5oVa1FxQ3NCkRFmwxDUGuars",
+                authDomain: "lich-truc-kttv-th.firebaseapp.com",
+                databaseURL: "https://lich-truc-kttv-th-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "lich-truc-kttv-th",
+                storageBucket: "lich-truc-kttv-th.firebasestorage.app",
+                messagingSenderId: "594134866652",
+                appId: "1:594134866652:web:12dd1a479daa0c500f3219"
+            };
+
+            let firebaseDb = null;
+            let rosterDbRef = null;
+            let passDbRef = null;
+            let isApplyingRemoteUpdate = false;
+            let hasInitialCloudSync = false;
+
+            function updateSyncBadge(status, text) {
+                const badge = document.getElementById('firebase-sync-badge');
+                if (!badge) return;
+                if (status === 'connected') {
+                    badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40';
+                    badge.innerHTML = `<i class="fa-solid fa-cloud-check"></i><span>${text || 'Đã đồng bộ đám mây'}</span>`;
+                } else if (status === 'saving') {
+                    badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/40';
+                    badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i><span>${text || 'Đang lưu đám mây...'}</span>`;
+                } else if (status === 'error') {
+                    badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-200 border border-rose-400/40';
+                    badge.innerHTML = `<i class="fa-solid fa-cloud-slash"></i><span>${text || 'Chế độ ngoại tuyến'}</span>`;
+                } else {
+                    badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30';
+                    badge.innerHTML = `<i class="fa-solid fa-cloud-arrow-up animate-pulse"></i><span>${text || 'Đang kết nối đám mây...'}</span>`;
+                }
+            }
+
+            try {
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(FIREBASE_CONFIG);
+                    }
+                    firebaseDb = firebase.database();
+                    rosterDbRef = firebaseDb.ref('kttv_forecast_roster_v3');
+                    passDbRef = firebaseDb.ref('kttv_supervisor_auth/pass');
+                }
+            } catch (e) {
+                console.error('Lỗi khởi tạo Firebase:', e);
+            }
+
+            // Danh sách nhân sự chuẩn theo yêu cầu
+            const DEFAULT_STAFF = [
+                // Tổ Dự báo Thủy văn (4 người)
+                { id: 'h1', name: 'Nguyễn Thị Thủy', team: 'hydro' },
+                { id: 'h2', name: 'Nguyễn Thị Hoa', team: 'hydro' },
+                { id: 'h3', name: 'Nguyễn Danh Lam', team: 'hydro' },
+                { id: 'h4', name: 'Lê Văn Thắng', team: 'hydro' },
+                // Tổ Dự báo Khí tượng (6 người)
+                { id: 'm1', name: 'Đỗ Thị Thi', team: 'meteo' },
+                { id: 'm2', name: 'Đỗ Thị Huyền', team: 'meteo' },
+                { id: 'm3', name: 'Lữ Thị Thu Trang', team: 'meteo' },
+                { id: 'm4', name: 'Bùi Xuân Tuyên', team: 'meteo' },
+                { id: 'm5', name: 'Nguyễn Việt Anh', team: 'meteo' },
+                { id: 'm6', name: 'Thiều Tú Anh', team: 'meteo' }
+            ];
+
+            // Định mức mặc định: Bình thường Thủy văn 1N/1Đ, Khí tượng 2N/2Đ
+            const DEFAULT_PRESETS = {
+                normal: { hydroDay: 1, hydroNight: 1, meteoDay: 2, meteoNight: 2 },
+                severe: { hydroDay: 2, hydroNight: 2, meteoDay: 3, meteoNight: 3 }
+            };
+
+            let appState = {
+                staff: [],
+                presets: JSON.parse(JSON.stringify(DEFAULT_PRESETS)),
+                activeTab: 'matrix', // 'matrix' | 'report'
+                startDate: '',
+                endDate: '',
+                schedule: {},
+                isUnlocked: false, // Mặc định vào trang là Chế độ Xem (Chỉ đọc)
+                supervisorPass: DEFAULT_SUPERVISOR_PASS
+            };
+
+            let editingShiftContext = null;
+            let editingDayConfigDate = null;
+            let modalSelectedWeatherType = 'normal';
+            let pendingConfirmCallback = null;
+            let remainingLockSeconds = AUTO_LOCK_DURATION_SEC;
+            let autoLockIntervalId = null;
+
+            // ==========================================
+            // 1. LƯU TRỮ & PHÂN QUYỀN AN TOÀN
+            // ==========================================
+            function normalizeFirebaseSchedule(rawSchedule) {
+                if (!rawSchedule || typeof rawSchedule !== 'object') return {};
+                const clean = {};
+                Object.keys(rawSchedule).forEach(dateKey => {
+                    const dayObj = rawSchedule[dateKey] || {};
+                    const sh = dayObj.shifts || {};
+                    clean[dateKey] = {
+                        weather: dayObj.weather || 'normal',
+                        note: typeof dayObj.note === 'string' ? dayObj.note : '',
+                        req: dayObj.req ? {
+                            hydroDay: Number(dayObj.req.hydroDay ?? 1),
+                            hydroNight: Number(dayObj.req.hydroNight ?? 1),
+                            meteoDay: Number(dayObj.req.meteoDay ?? 2),
+                            meteoNight: Number(dayObj.req.meteoNight ?? 2)
+                        } : { ...appState.presets.normal },
+                        shifts: {
+                            hydroDay: Array.isArray(sh.hydroDay) ? sh.hydroDay : (sh.hydroDay ? Object.values(sh.hydroDay) : []),
+                            hydroNight: Array.isArray(sh.hydroNight) ? sh.hydroNight : (sh.hydroNight ? Object.values(sh.hydroNight) : []),
+                            meteoDay: Array.isArray(sh.meteoDay) ? sh.meteoDay : (sh.meteoDay ? Object.values(sh.meteoDay) : []),
+                            meteoNight: Array.isArray(sh.meteoNight) ? sh.meteoNight : (sh.meteoNight ? Object.values(sh.meteoNight) : [])
+                        }
+                    };
+                });
+                return clean;
+            }
+
+            function saveToStorage() {
+                const payload = {
+                    staff: appState.staff,
+                    presets: appState.presets,
+                    startDate: appState.startDate,
+                    endDate: appState.endDate,
+                    schedule: appState.schedule,
+                    updatedAt: Date.now()
+                };
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                } catch (err) {
+                    // Bỏ qua lỗi SecurityError nếu chạy trong iframe hạn chế storage
+                }
+
+                if (rosterDbRef && !isApplyingRemoteUpdate) {
+                    updateSyncBadge('saving', 'Đang đồng bộ...');
+                    rosterDbRef.set(payload)
+                        .then(() => {
+                            updateSyncBadge('connected', 'Đã đồng bộ đám mây');
+                        })
+                        .catch((err) => {
+                            console.error('Firebase write error:', err);
+                            updateSyncBadge('error', 'Lỗi ghi đám mây');
+                        });
+                }
+            }
+
+            function savePasswordToStorage(newPass) {
+                appState.supervisorPass = newPass;
+                try {
+                    localStorage.setItem(AUTH_PASS_KEY, newPass);
+                } catch (err) {
+                    // Bỏ qua lỗi nếu storage bị hạn chế
+                }
+                if (passDbRef) {
+                    passDbRef.set(newPass).catch(() => {});
+                }
+            }
+
+            function loadPasswordFromStorage() {
+                try {
+                    const savedPass = localStorage.getItem(AUTH_PASS_KEY);
+                    if (savedPass && savedPass.length >= 4) {
+                        appState.supervisorPass = savedPass;
+                        return;
+                    }
+                } catch (err) {
+                    // Fallback về mật khẩu mặc định
+                }
+                appState.supervisorPass = DEFAULT_SUPERVISOR_PASS;
+            }
+
+            function requireSupervisorPermission() {
+                if (appState.isUnlocked) {
+                    resetAutoLockTimer();
+                    return true;
+                }
+                showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' và nhập mật khẩu Trưởng ca để chỉnh sửa.", 'warning');
+                return false;
+            }
+
+            function resetAutoLockTimer() {
+                remainingLockSeconds = AUTO_LOCK_DURATION_SEC;
+                updateAutoLockDisplay();
+            }
+
+            function updateAutoLockDisplay() {
+                const timerEl = document.getElementById('auto-lock-timer');
+                if (!timerEl) return;
+                const mins = String(Math.floor(remainingLockSeconds / 60)).padStart(2, '0');
+                const secs = String(remainingLockSeconds % 60).padStart(2, '0');
+                timerEl.textContent = `${mins}:${secs}`;
+            }
+
+            function startAutoLockCountdown() {
+                stopAutoLockCountdown();
+                remainingLockSeconds = AUTO_LOCK_DURATION_SEC;
+                updateAutoLockDisplay();
+                autoLockIntervalId = setInterval(() => {
+                    if (!appState.isUnlocked) {
+                        stopAutoLockCountdown();
+                        return;
+                    }
+                    remainingLockSeconds--;
+                    updateAutoLockDisplay();
+                    if (remainingLockSeconds <= 0) {
+                        window.lockShiftControl(true);
+                    }
+                }, 1000);
+            }
+
+            function stopAutoLockCountdown() {
+                if (autoLockIntervalId) {
+                    clearInterval(autoLockIntervalId);
+                    autoLockIntervalId = null;
+                }
+            }
+
+            function updateAuthUI() {
+                const lockedBar = document.getElementById('auth-locked-bar');
+                const unlockedBar = document.getElementById('auth-unlocked-bar');
+                const readonlyHint = document.getElementById('readonly-hint-badge');
+                const unlockedHint = document.getElementById('unlocked-hint-badge');
+                const toolbarActions = document.getElementById('supervisor-toolbar-actions');
+                const btnStaff = document.getElementById('btn-manage-staff');
+                const btnPresets = document.getElementById('btn-manage-presets');
+
+                if (appState.isUnlocked) {
+                    lockedBar.classList.add('hidden');
+                    unlockedBar.classList.remove('hidden');
+                    readonlyHint.classList.add('hidden');
+                    unlockedHint.classList.remove('hidden');
+                    toolbarActions.classList.remove('opacity-60');
+                    btnStaff.classList.remove('opacity-70');
+                    btnPresets.classList.remove('opacity-70');
+                } else {
+                    lockedBar.classList.remove('hidden');
+                    unlockedBar.classList.add('hidden');
+                    readonlyHint.classList.remove('hidden');
+                    unlockedHint.classList.add('hidden');
+                    toolbarActions.classList.add('opacity-60');
+                    btnStaff.classList.add('opacity-70');
+                    btnPresets.classList.add('opacity-70');
+                }
+            }
+
+            window.openUnlockModal = function() {
+                const input = document.getElementById('unlock-password-input');
+                const errEl = document.getElementById('unlock-error-msg');
+                input.value = '';
+                input.type = 'password';
+                errEl.classList.add('hidden');
+                document.getElementById('unlock-modal').classList.remove('hidden');
+                setTimeout(() => input.focus(), 50);
+            };
+
+            window.togglePasswordVisibility = function(inputId, btn) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.innerHTML = '<i class="fa-solid fa-eye-slash text-xs"></i>';
+                } else {
+                    input.type = 'password';
+                    btn.innerHTML = '<i class="fa-solid fa-eye text-xs"></i>';
+                }
+            };
+
+            window.handleUnlockSubmit = function(event) {
+                event.preventDefault();
+                const input = document.getElementById('unlock-password-input');
+                const errEl = document.getElementById('unlock-error-msg');
+                const entered = input.value.trim();
+
+                if (entered === appState.supervisorPass) {
+                    appState.isUnlocked = true;
+                    window.closeModal('unlock-modal');
+                    updateAuthUI();
+                    startAutoLockCountdown();
+                    renderAll();
+                    showToast('Đã mở khóa quyền Trưởng ca trực! Bạn có thể tiến hành phân ca.', 'success');
+                } else {
+                    errEl.classList.remove('hidden');
+                    input.select();
+                }
+            };
+
+            window.lockShiftControl = function(isAuto = false) {
+                appState.isUnlocked = false;
+                stopAutoLockCountdown();
+                ['shift-modal', 'day-config-modal', 'staff-modal', 'presets-modal', 'change-pass-modal'].forEach(id => window.closeModal(id));
+                updateAuthUI();
+                renderAll();
+                if (isAuto) {
+                    showToast('Hệ thống đã tự động khóa quyền phân ca sau 15 phút không thao tác.', 'info');
+                } else {
+                    showToast('Đã khóa quyền chỉnh sửa, chuyển về Chế độ Xem an toàn.', 'info');
+                }
+            };
+
+            window.openChangePassModal = function() {
+                if (!requireSupervisorPermission()) return;
+                document.getElementById('cp-old-pass').value = '';
+                document.getElementById('cp-new-pass').value = '';
+                document.getElementById('cp-confirm-pass').value = '';
+                document.getElementById('cp-error-msg').classList.add('hidden');
+                document.getElementById('change-pass-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('cp-old-pass').focus(), 50);
+            };
+
+            window.handleChangePassSubmit = function(event) {
+                event.preventDefault();
+                if (!requireSupervisorPermission()) return;
+                const oldP = document.getElementById('cp-old-pass').value.trim();
+                const newP = document.getElementById('cp-new-pass').value.trim();
+                const confP = document.getElementById('cp-confirm-pass').value.trim();
+                const errEl = document.getElementById('cp-error-msg');
+
+                if (oldP !== appState.supervisorPass) {
+                    errEl.textContent = 'Mật khẩu hiện tại không đúng!';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                if (newP.length < 4) {
+                    errEl.textContent = 'Mật khẩu mới phải có ít nhất 4 ký tự!';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                if (newP !== confP) {
+                    errEl.textContent = 'Mật khẩu nhập lại không khớp!';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                savePasswordToStorage(newP);
+                window.closeModal('change-pass-modal');
+                showToast('Đã cập nhật mật khẩu Trưởng ca mới thành công!', 'success');
+            };
+
+            window.confirmResetDefaultPassword = function() {
+                window.closeModal('unlock-modal');
+                openConfirmModal(
+                    'Đặt lại mật khẩu Trưởng ca gốc?',
+                    'Mật khẩu phân ca sẽ được đặt lại về mặc định ban đầu là "kttv2026". Bạn có chắc chắn muốn thực hiện?',
+                    function() {
+                        savePasswordToStorage(DEFAULT_SUPERVISOR_PASS);
+                        showToast('Đã đặt lại mật khẩu Trưởng ca về mặc định: kttv2026', 'success');
+                    }
+                );
+            };
+
+            function loadFromStorage() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed.staff) && parsed.staff.length > 0) {
+                            appState.staff = parsed.staff;
+                        } else {
+                            appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+                        }
+                        if (parsed.presets && parsed.presets.normal && parsed.presets.severe) {
+                            appState.presets = parsed.presets;
+                        }
+                        if (parsed.startDate && parsed.endDate) {
+                            appState.startDate = parsed.startDate;
+                            appState.endDate = parsed.endDate;
+                        }
+                        if (parsed.schedule && typeof parsed.schedule === 'object') {
+                            appState.schedule = parsed.schedule;
+                        }
+                        return;
+                    }
+                } catch (err) {
+                    // Fallback về dữ liệu mặc định
+                }
+                appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+            }
+
+            // ==========================================
+            // 2. TIỆN ÍCH NGÀY THÁNG & HIỂN THỊ
+            // ==========================================
+            function toISODate(dateObj) {
+                const y = dateObj.getFullYear();
+                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const d = String(dateObj.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+
+            function parseISODate(str) {
+                const parts = str.split('-').map(Number);
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+
+            function formatDisplayDate(isoStr) {
+                const parts = isoStr.split('-');
+                if (parts.length !== 3) return isoStr;
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            function getVietnameseDayName(isoStr) {
+                const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+                return days[parseISODate(isoStr).getDay()];
+            }
+
+            function isWeekend(isoStr) {
+                const day = parseISODate(isoStr).getDay();
+                return day === 0 || day === 6;
+            }
+
+            function getActiveDateList() {
+                if (!appState.startDate || !appState.endDate) return [];
+                const start = parseISODate(appState.startDate);
+                const end = parseISODate(appState.endDate);
+                if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
+
+                const list = [];
+                const cur = new Date(start);
+                let guard = 0;
+                while (cur <= end && guard < 62) {
+                    list.push(toISODate(cur));
+                    cur.setDate(cur.getDate() + 1);
+                    guard++;
+                }
+                return list;
+            }
+
+            function ensureScheduleDatesExist() {
+                const dates = getActiveDateList();
+                let changed = false;
+                dates.forEach(d => {
+                    if (!appState.schedule[d]) {
+                        appState.schedule[d] = {
+                            weather: 'normal',
+                            note: '',
+                            req: { ...appState.presets.normal },
+                            shifts: {
+                                hydroDay: [],
+                                hydroNight: [],
+                                meteoDay: [],
+                                meteoNight: []
+                            }
+                        };
+                        changed = true;
+                    } else {
+                        if (!appState.schedule[d].req) {
+                            appState.schedule[d].req = { ...appState.presets.normal };
+                        }
+                        if (!appState.schedule[d].shifts) {
+                            appState.schedule[d].shifts = { hydroDay: [], hydroNight: [], meteoDay: [], meteoNight: [] };
+                        }
+                        if (typeof appState.schedule[d].note !== 'string') {
+                            appState.schedule[d].note = '';
+                        }
+                    }
+                });
+                if (changed) saveToStorage();
+            }
+
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const colors = {
+                    success: 'bg-emerald-700 text-white border-emerald-500',
+                    warning: 'bg-amber-600 text-white border-amber-400',
+                    error: 'bg-rose-700 text-white border-rose-500',
+                    info: 'bg-slate-800 text-white border-slate-600'
+                };
+                const icons = {
+                    success: 'fa-circle-check',
+                    warning: 'fa-triangle-exclamation',
+                    error: 'fa-circle-xmark',
+                    info: 'fa-circle-info'
+                };
+                const toast = document.createElement('div');
+                toast.className = `px-4 py-2.5 rounded-xl shadow-lg border text-xs font-medium flex items-center gap-2 transition-all duration-300 ${colors[type] || colors.info}`;
+                toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 300);
+                }, 3200);
+            }
+
+            function escapeHTML(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            // ==========================================
+            // 3. ĐIỀU KHIỂN THỜI GIAN & TAB
+            // ==========================================
+            window.setQuickRange = function(mode) {
+                const base = appState.startDate ? parseISODate(appState.startDate) : new Date();
+                let start = new Date(base);
+                let end = new Date(base);
+
+                ['btn-range-7', 'btn-range-15', 'btn-range-month'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:bg-white transition';
+                });
+
+                if (mode === 7) {
+                    end.setDate(start.getDate() + 6);
+                    const b = document.getElementById('btn-range-7');
+                    if (b) b.className = 'px-2.5 py-1 rounded-lg font-semibold bg-white text-sky-700 shadow-sm transition';
+                } else if (mode === 15) {
+                    end.setDate(start.getDate() + 14);
+                    const b = document.getElementById('btn-range-15');
+                    if (b) b.className = 'px-2.5 py-1 rounded-lg font-semibold bg-white text-sky-700 shadow-sm transition';
+                } else {
+                    start = new Date(base.getFullYear(), base.getMonth(), 1);
+                    end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+                    const b = document.getElementById('btn-range-month');
+                    if (b) b.className = 'px-2.5 py-1 rounded-lg font-semibold bg-white text-sky-700 shadow-sm transition';
+                }
+
+                appState.startDate = toISODate(start);
+                appState.endDate = toISODate(end);
+                document.getElementById('input-start-date').value = appState.startDate;
+                document.getElementById('input-end-date').value = appState.endDate;
+
+                ensureScheduleDatesExist();
+                saveToStorage();
+                renderAll();
+            };
+
+            window.handleCustomDateChange = function() {
+                const s = document.getElementById('input-start-date').value;
+                const e = document.getElementById('input-end-date').value;
+                if (!s || !e) return;
+                if (parseISODate(s) > parseISODate(e)) {
+                    showToast('Ngày bắt đầu không được lớn hơn ngày kết thúc!', 'warning');
+                    return;
+                }
+                const diffDays = Math.round((parseISODate(e) - parseISODate(s)) / (1000 * 60 * 60 * 24)) + 1;
+                if (diffDays > 62) {
+                    showToast('Chỉ hỗ trợ tối đa 62 ngày mỗi kỳ lập lịch.', 'warning');
+                    return;
+                }
+
+                ['btn-range-7', 'btn-range-15', 'btn-range-month'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:bg-white transition';
+                });
+
+                appState.startDate = s;
+                appState.endDate = e;
+                ensureScheduleDatesExist();
+                saveToStorage();
+                renderAll();
+            };
+
+            window.switchViewTab = function(tab) {
+                appState.activeTab = tab;
+                const btnMatrix = document.getElementById('tab-btn-matrix');
+                const btnReport = document.getElementById('tab-btn-report');
+                const viewMatrix = document.getElementById('view-matrix-container');
+                const viewReport = document.getElementById('view-report-container');
+                const guideMatrix = document.getElementById('matrix-guide-bar');
+                const guideReport = document.getElementById('report-guide-bar');
+                const printLabel = document.getElementById('btn-print-label');
+
+                if (tab === 'matrix') {
+                    btnMatrix.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2';
+                    btnReport.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2';
+                    viewMatrix.classList.remove('hidden');
+                    viewReport.classList.add('hidden');
+                    guideMatrix.classList.remove('hidden');
+                    guideReport.classList.add('hidden');
+                    printLabel.textContent = 'In Bảng Ma Trận';
+                } else {
+                    btnReport.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-800 shadow-sm transition flex items-center gap-2';
+                    btnMatrix.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2';
+                    viewReport.classList.remove('hidden');
+                    viewMatrix.classList.add('hidden');
+                    guideReport.classList.remove('hidden');
+                    guideMatrix.classList.add('hidden');
+                    printLabel.textContent = 'In Lịch Báo Cáo';
+                }
+                updatePrintHeader();
+            };
+
+            // ==========================================
+            // 4. PHÁT HIỆN XUNG ĐỘT & PHÂN CA TỰ ĐỘNG
+            // ==========================================
+            function detectConflicts(dates) {
+                const warnings = {};
+                let totalConflicts = 0;
+
+                for (let i = 0; i < dates.length; i++) {
+                    const dStr = dates[i];
+                    const dayData = appState.schedule[dStr];
+                    if (!dayData) continue;
+
+                    const isNormalWeather = dayData.weather === 'normal';
+
+                    // Kiểm tra trực cả Ngày & Đêm trong cùng ngày (chỉ cảnh báo khi thời tiết bình thường)
+                    ['hydro', 'meteo'].forEach(team => {
+                        const dList = dayData.shifts[`${team}Day`] || [];
+                        const nList = dayData.shifts[`${team}Night`] || [];
+                        dList.forEach(id => {
+                            if (nList.includes(id) && isNormalWeather) {
+                                warnings[`${dStr}_${team}Day_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
+                                warnings[`${dStr}_${team}Night_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
+                                totalConflicts++;
+                            }
+                        });
+                    });
+
+                    // Kiểm tra trực Đêm hôm trước -> Ngày hôm sau liên tiếp
+                    if (i > 0) {
+                        const prevStr = dates[i - 1];
+                        const prevData = appState.schedule[prevStr];
+                        if (prevData) {
+                            ['hydro', 'meteo'].forEach(team => {
+                                const prevNight = prevData.shifts[`${team}Night`] || [];
+                                const curDay = dayData.shifts[`${team}Day`] || [];
+                                curDay.forEach(id => {
+                                    if (prevNight.includes(id)) {
+                                        warnings[`${dStr}_${team}Day_${id}`] = 'Trực Ca Đêm hôm trước sang Ca Ngày hôm nay (thiếu nghỉ ngơi)';
+                                        totalConflicts++;
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }
+                return { warnings, totalConflicts };
+            }
+
+            window.autoAssignSchedule = function() {
+                if (!requireSupervisorPermission()) return;
+                const dates = getActiveDateList();
+                if (dates.length === 0) return;
+
+                const hydroStaff = appState.staff.filter(s => s.team === 'hydro');
+                const meteoStaff = appState.staff.filter(s => s.team === 'meteo');
+
+                if (hydroStaff.length === 0 && meteoStaff.length === 0) {
+                    showToast('Chưa có nhân sự nào trong danh sách!', 'warning');
+                    return;
+                }
+
+                // Bộ đếm công bằng trong kỳ
+                const stats = {};
+                appState.staff.forEach(s => {
+                    stats[s.id] = { total: 0, night: 0, weekend: 0, lastNightDate: null, lastDayDate: null };
+                });
+
+                function pickStaffForShift(teamMembers, count, dateStr, shiftType, prevDateStr) {
+                    if (count <= 0 || teamMembers.length === 0) return [];
+                    const wknd = isWeekend(dateStr);
+                    const picked = [];
+
+                    for (let k = 0; k < count; k++) {
+                        // Sắp xếp ứng viên ưu tiên người ít công nhất và không bị trực thông ca
+                        const candidates = teamMembers.filter(m => !picked.includes(m.id));
+                        if (candidates.length === 0) break;
+
+                        candidates.sort((a, b) => {
+                            const sa = stats[a.id];
+                            const sb = stats[b.id];
+
+                            // Phạt nặng nếu trực Đêm hôm trước mà hôm nay trực Ngày
+                            const penaltyNightToDayA = (shiftType === 'day' && prevDateStr && sa.lastNightDate === prevDateStr) ? 100 : 0;
+                            const penaltyNightToDayB = (shiftType === 'day' && prevDateStr && sb.lastNightDate === prevDateStr) ? 100 : 0;
+                            if (penaltyNightToDayA !== penaltyNightToDayB) return penaltyNightToDayA - penaltyNightToDayB;
+
+                            // Phạt nếu trực Ngày hôm nay rồi trực tiếp Đêm hôm nay
+                            const penaltySameDayA = (shiftType === 'night' && sa.lastDayDate === dateStr) ? 80 : 0;
+                            const penaltySameDayB = (shiftType === 'night' && sb.lastDayDate === dateStr) ? 80 : 0;
+                            if (penaltySameDayA !== penaltySameDayB) return penaltySameDayA - penaltySameDayB;
+
+                            // Ưu tiên chia đều tổng số ca
+                            if (sa.total !== sb.total) return sa.total - sb.total;
+
+                            // Nếu là cuối tuần, ưu tiên người ít trực cuối tuần hơn
+                            if (wknd && sa.weekend !== sb.weekend) return sa.weekend - sb.weekend;
+
+                            // Nếu là ca đêm, ưu tiên người ít ca đêm hơn
+                            if (shiftType === 'night' && sa.night !== sb.night) return sa.night - sb.night;
+
+                            return Math.random() - 0.5;
+                        });
+
+                        const chosen = candidates[0];
+                        picked.push(chosen.id);
+                        stats[chosen.id].total++;
+                        if (wknd) stats[chosen.id].weekend++;
+                        if (shiftType === 'night') {
+                            stats[chosen.id].night++;
+                            stats[chosen.id].lastNightDate = dateStr;
+                        } else {
+                            stats[chosen.id].lastDayDate = dateStr;
+                        }
+                    }
+                    return picked;
+                }
+
+                dates.forEach((dateStr, idx) => {
+                    const prevDateStr = idx > 0 ? dates[idx - 1] : null;
+                    const dayData = appState.schedule[dateStr];
+                    dayData.shifts.hydroDay = pickStaffForShift(hydroStaff, dayData.req.hydroDay, dateStr, 'day', prevDateStr);
+                    dayData.shifts.hydroNight = pickStaffForShift(hydroStaff, dayData.req.hydroNight, dateStr, 'night', prevDateStr);
+                    dayData.shifts.meteoDay = pickStaffForShift(meteoStaff, dayData.req.meteoDay, dateStr, 'day', prevDateStr);
+                    dayData.shifts.meteoNight = pickStaffForShift(meteoStaff, dayData.req.meteoNight, dateStr, 'night', prevDateStr);
+                });
+
+                saveToStorage();
+                renderAll();
+                showToast('Đã phân ca tự động chia đều công và đảm bảo giãn cách ca trực!', 'success');
+            };
+
+            window.confirmClearSchedule = function() {
+                if (!requireSupervisorPermission()) return;
+                openConfirmModal(
+                    'Xóa trắng lịch trực kỳ này?',
+                    'Toàn bộ dấu tích ca Ngày (N) và ca Đêm (Đ) trong khoảng ngày đang chọn sẽ được xóa sạch. Bạn có chắc chắn không?',
+                    function() {
+                        const dates = getActiveDateList();
+                        dates.forEach(d => {
+                            if (appState.schedule[d]) {
+                                appState.schedule[d].shifts = {
+                                    hydroDay: [],
+                                    hydroNight: [],
+                                    meteoDay: [],
+                                    meteoNight: []
+                                };
+                            }
+                        });
+                        saveToStorage();
+                        renderAll();
+                        showToast('Đã xóa trắng lịch trực kỳ hiện tại.', 'info');
+                    }
+                );
+            };
+
+            // ==========================================
+            // 5. RENDER GIAO DIỆN (TAB 1 MA TRẬN & TAB 2 BÁO CÁO)
+            // ==========================================
+            function renderAll() {
+                const badge = document.getElementById('total-staff-badge');
+                if (badge) badge.textContent = appState.staff.length;
+                renderMatrixView();
+                renderReportView();
+                updatePrintHeader();
+            }
+
+            // --- TAB 1: MA TRẬN TÍCH PHÂN CA ---
+            function renderMatrixView() {
+                const thead = document.getElementById('matrix-thead');
+                const tbody = document.getElementById('matrix-tbody');
+                const tfoot = document.getElementById('matrix-tfoot');
+                const dates = getActiveDateList();
+                const { warnings, totalConflicts } = detectConflicts(dates);
+
+                // Header ngày
+                let headHtml = '<tr class="bg-slate-100 border-b border-slate-300 text-[11px]">';
+                headHtml += '<th class="sticky-col-left bg-slate-100 py-2 px-3 font-bold text-slate-800 border-r border-slate-300 min-w-[175px] max-w-[195px]">Cán bộ Dự báo</th>';
+
+                const shortDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                dates.forEach(dateStr => {
+                    const dObj = parseISODate(dateStr);
+                    const dayNum = String(dObj.getDate()).padStart(2, '0');
+                    const shortDayName = shortDays[dObj.getDay()];
+                    const wknd = isWeekend(dateStr);
+                    const dayData = appState.schedule[dateStr];
+                    const isSevere = dayData && dayData.weather === 'severe';
+                    const isCustom = dayData && dayData.weather === 'custom';
+
+                    let headerBg = wknd ? 'bg-amber-100/80 text-rose-700 weekend-col' : 'bg-slate-100 text-slate-700';
+                    if (isSevere) headerBg = 'bg-rose-100 text-rose-900';
+
+                    let wIcon = '';
+                    if (isSevere) wIcon = '<i class="fa-solid fa-hurricane text-rose-600 text-[9px] block mt-0.5 no-print" title="Bão / Lũ tăng cường"></i>';
+                    else if (isCustom) wIcon = '<i class="fa-solid fa-sliders text-purple-600 text-[9px] block mt-0.5 no-print" title="Định mức tùy chỉnh"></i>';
+
+                    headHtml += `
+                        <th onclick="window.openDayConfigModal('${dateStr}')" title="${appState.isUnlocked ? 'Click chỉnh thời tiết ngày ' + formatDisplayDate(dateStr) : 'Ngày ' + formatDisplayDate(dateStr) + ' (Chế độ Xem)'}"
+                            class="py-1.5 px-1 text-center border-r border-slate-200 min-w-[34px] ${appState.isUnlocked ? 'cursor-pointer hover:bg-sky-100' : 'cursor-default'} transition ${headerBg}">
+                            <div class="font-bold leading-tight">${dayNum}</div>
+                            <div class="text-[9px] font-medium opacity-80 leading-tight">${shortDayName}</div>
+                            ${wIcon}
+                        </th>
+                    `;
+                });
+
+                headHtml += `
+                    <th class="py-1.5 px-2 text-center bg-amber-50 text-amber-900 font-bold border-l border-r border-slate-300 min-w-[42px]" title="Tổng ca Ngày">Ngày</th>
+                    <th class="py-1.5 px-2 text-center bg-indigo-50 text-indigo-900 font-bold border-r border-slate-300 min-w-[42px]" title="Tổng ca Đêm">Đêm</th>
+                    <th class="py-1.5 px-2 text-center bg-rose-50 text-rose-900 font-bold border-r border-slate-300 min-w-[46px]" title="Số ca trực Thứ 7 / Chủ Nhật">T7/CN</th>
+                    <th class="sticky-col-right py-1.5 px-2 text-center bg-slate-200 text-slate-900 font-bold min-w-[48px]" title="Tổng số ca trực">Tổng</th>
+                </tr>`;
+                thead.innerHTML = headHtml;
+
+                // Body 2 tổ
+                tbody.innerHTML = '';
+                const teams = [
+                    { key: 'hydro', title: 'I. TỔ DỰ BÁO THỦY VĂN', bgClass: 'bg-sky-50 text-sky-900', dayKey: 'hydroDay', nightKey: 'hydroNight' },
+                    { key: 'meteo', title: 'II. TỔ DỰ BÁO KHÍ TƯỢNG', bgClass: 'bg-indigo-50 text-indigo-900', dayKey: 'meteoDay', nightKey: 'meteoNight' }
+                ];
+
+                teams.forEach(team => {
+                    const members = appState.staff.filter(s => s.team === team.key);
+
+                    const groupTr = document.createElement('tr');
+                    groupTr.className = `${team.bgClass} font-bold border-b border-slate-200`;
+                    groupTr.innerHTML = `
+                        <td class="sticky-col-left ${team.bgClass} py-1.5 px-3 border-r border-slate-300 whitespace-nowrap">${team.title} (${members.length})</td>
+                        <td colspan="${dates.length + 4}" class="py-1.5 px-3"></td>
+                    `;
+                    tbody.appendChild(groupTr);
+
+                    members.forEach((member, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-slate-50/90 transition group';
+
+                        let statDay = 0, statNight = 0, statWknd = 0, statTotal = 0;
+
+                        let rowHtml = `
+                            <td class="sticky-col-left bg-white group-hover:bg-slate-50 py-1.5 px-3 border-r border-slate-300 font-medium text-slate-800 whitespace-nowrap">
+                                <span class="text-slate-400 mr-1.5 text-[11px]">${idx + 1}.</span>${escapeHTML(member.name)}
+                            </td>
+                        `;
+
+                        dates.forEach(dateStr => {
+                            const dayData = appState.schedule[dateStr];
+                            const wknd = isWeekend(dateStr);
+                            const hasDay = dayData && dayData.shifts[team.dayKey].includes(member.id);
+                            const hasNight = dayData && dayData.shifts[team.nightKey].includes(member.id);
+
+                            if (hasDay) { statDay++; statTotal++; if (wknd) statWknd++; }
+                            if (hasNight) { statNight++; statTotal++; if (wknd) statWknd++; }
+
+                            const warnDay = warnings[`${dateStr}_${team.dayKey}_${member.id}`];
+                            const warnNight = warnings[`${dateStr}_${team.nightKey}_${member.id}`];
+                            const hasConflict = Boolean(warnDay || warnNight);
+
+                            let badgeHtml = '<span class="text-transparent text-[11px]">-</span>';
+                            if (hasDay && hasNight) {
+                                badgeHtml = '<span class="matrix-cell-print inline-block w-full py-0.5 rounded bg-rose-100 text-rose-900 font-bold border border-rose-300 text-[11px]">NĐ</span>';
+                            } else if (hasDay) {
+                                badgeHtml = '<span class="matrix-cell-print inline-block w-full py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-300 text-[11px]">N</span>';
+                            } else if (hasNight) {
+                                badgeHtml = '<span class="matrix-cell-print inline-block w-full py-0.5 rounded bg-indigo-100 text-indigo-900 font-bold border border-indigo-300 text-[11px]">Đ</span>';
+                            }
+
+                            const cellBg = hasConflict
+                                ? 'ring-2 ring-inset ring-rose-500 bg-rose-50'
+                                : (wknd ? 'bg-amber-50/30 weekend-col' : '');
+                            const cursorClass = appState.isUnlocked ? 'cursor-pointer hover:bg-sky-50' : 'cursor-default';
+                            const tip = hasConflict
+                                ? (warnDay || warnNight)
+                                : (appState.isUnlocked
+                                    ? `${member.name} • ${formatDisplayDate(dateStr)} (Click xoay vòng: Trống -> N -> Đ -> NĐ)`
+                                    : `${member.name} • ${formatDisplayDate(dateStr)} (Chế độ Xem - Mở khóa để chỉnh sửa)`);
+
+                            rowHtml += `
+                                <td onclick="window.cycleMatrixCell('${dateStr}', '${team.key}', '${member.id}')"
+                                    title="${escapeHTML(tip)}"
+                                    class="p-0.5 text-center border-r border-slate-200 transition ${cursorClass} ${cellBg}">
+                                    ${badgeHtml}
+                                </td>
+                            `;
+                        });
+
+                        rowHtml += `
+                            <td class="py-1.5 px-1.5 text-center font-semibold text-amber-800 bg-amber-50/40 border-l border-r border-slate-200">${statDay}</td>
+                            <td class="py-1.5 px-1.5 text-center font-semibold text-indigo-800 bg-indigo-50/40 border-r border-slate-200">${statNight}</td>
+                            <td class="py-1.5 px-1.5 text-center font-semibold ${statWknd > 0 ? 'text-rose-600' : 'text-slate-400'} border-r border-slate-200">${statWknd}</td>
+                            <td class="sticky-col-right py-1.5 px-1.5 text-center font-bold text-slate-900 bg-slate-100 group-hover:bg-slate-200">${statTotal}</td>
+                        `;
+
+                        tr.innerHTML = rowHtml;
+                        tbody.appendChild(tr);
+                    });
+                });
+
+                // Footer kiểm soát quân số ngày/đêm từng tổ
+                let shortageDays = 0;
+                let footHtml = `
+                    <tr class="border-b border-slate-200 bg-sky-50/60">
+                        <td class="sticky-col-left bg-sky-50 py-1.5 px-3 font-bold text-sky-900 border-r border-slate-300 text-[11px]">Quân số Thủy văn (N/Đ)</td>
+                `;
+
+                dates.forEach(dateStr => {
+                    const d = appState.schedule[dateStr];
+                    const curD = d.shifts.hydroDay.length;
+                    const curN = d.shifts.hydroNight.length;
+                    const reqD = d.req.hydroDay;
+                    const reqN = d.req.hydroNight;
+                    const isOk = (curD === reqD && curN === reqN);
+                    const isShort = (curD < reqD || curN < reqN);
+                    if (isShort) shortageDays++;
+
+                    const style = isOk
+                        ? 'text-emerald-700 bg-emerald-50/60 font-semibold'
+                        : (isShort ? 'text-amber-700 bg-amber-100/70 font-bold' : 'text-rose-700 bg-rose-100/70 font-bold');
+
+                    footHtml += `
+                        <td title="Thủy văn: ${curD} Ngày / ${curN} Đêm (Định mức: ${reqD}/${reqN})"
+                            class="py-1 px-0.5 text-center border-r border-slate-200 text-[10px] ${style}">
+                            ${curD}/${curN}
+                        </td>
+                    `;
+                });
+                footHtml += '<td colspan="4" class="bg-slate-100 text-center text-[10px] text-slate-500 italic">Thực tế (N/Đ)</td></tr>';
+
+                footHtml += `
+                    <tr class="bg-indigo-50/60">
+                        <td class="sticky-col-left bg-indigo-50 py-1.5 px-3 font-bold text-indigo-900 border-r border-slate-300 text-[11px]">Quân số Khí tượng (N/Đ)</td>
+                `;
+
+                dates.forEach(dateStr => {
+                    const d = appState.schedule[dateStr];
+                    const curD = d.shifts.meteoDay.length;
+                    const curN = d.shifts.meteoNight.length;
+                    const reqD = d.req.meteoDay;
+                    const reqN = d.req.meteoNight;
+                    const isOk = (curD === reqD && curN === reqN);
+                    const isShort = (curD < reqD || curN < reqN);
+                    if (isShort) shortageDays++;
+
+                    const style = isOk
+                        ? 'text-emerald-700 bg-emerald-50/60 font-semibold'
+                        : (isShort ? 'text-amber-700 bg-amber-100/70 font-bold' : 'text-rose-700 bg-rose-100/70 font-bold');
+
+                    footHtml += `
+                        <td title="Khí tượng: ${curD} Ngày / ${curN} Đêm (Định mức: ${reqD}/${reqN})"
+                            class="py-1 px-0.5 text-center border-r border-slate-200 text-[10px] ${style}">
+                            ${curD}/${curN}
+                        </td>
+                    `;
+                });
+                footHtml += '<td colspan="4" class="bg-slate-100 text-center text-[10px] text-slate-500 italic">Định mức chuẩn</td></tr>';
+                tfoot.innerHTML = footHtml;
+
+                // Banner cảnh báo tổng hợp
+                const conflictBadge = document.getElementById('conflict-summary-badge');
+                const conflictText = document.getElementById('conflict-count-text');
+                if (totalConflicts > 0 || shortageDays > 0) {
+                    conflictBadge.classList.remove('hidden');
+                    const msgs = [];
+                    if (totalConflicts > 0) msgs.push(`${totalConflicts} cảnh báo trực liên tiếp`);
+                    if (shortageDays > 0) msgs.push(`${shortageDays} lượt tổ/ngày chưa đủ định mức quân số`);
+                    conflictText.textContent = msgs.join(' • ');
+                } else {
+                    conflictBadge.classList.add('hidden');
+                }
+            }
+
+            // Click xoay vòng trên Ma trận: Trống -> N -> Đ -> NĐ -> Trống
+            window.cycleMatrixCell = function(dateStr, team, staffId) {
+                if (!requireSupervisorPermission()) return;
+                const dayData = appState.schedule[dateStr];
+                if (!dayData) return;
+
+                const dayKey = `${team}Day`;
+                const nightKey = `${team}Night`;
+
+                const hasDay = dayData.shifts[dayKey].includes(staffId);
+                const hasNight = dayData.shifts[nightKey].includes(staffId);
+
+                dayData.shifts[dayKey] = dayData.shifts[dayKey].filter(id => id !== staffId);
+                dayData.shifts[nightKey] = dayData.shifts[nightKey].filter(id => id !== staffId);
+
+                if (!hasDay && !hasNight) {
+                    dayData.shifts[dayKey].push(staffId);
+                } else if (hasDay && !hasNight) {
+                    dayData.shifts[nightKey].push(staffId);
+                } else if (!hasDay && hasNight) {
+                    dayData.shifts[dayKey].push(staffId);
+                    dayData.shifts[nightKey].push(staffId);
+                }
+
+                saveToStorage();
+                renderAll();
+            };
+
+            // --- TAB 2: BẢNG TỔNG HỢP BÁO CÁO LÃNH ĐẠO ---
+            function renderReportView() {
+                const tbody = document.getElementById('schedule-tbody');
+                const dates = getActiveDateList();
+                const { warnings } = detectConflicts(dates);
+
+                tbody.innerHTML = '';
+
+                dates.forEach(dateStr => {
+                    const dayData = appState.schedule[dateStr];
+                    const wknd = isWeekend(dateStr);
+                    const dayName = getVietnameseDayName(dateStr);
+                    const displayDate = formatDisplayDate(dateStr);
+
+                    const tr = document.createElement('tr');
+                    tr.className = wknd
+                        ? 'bg-amber-50/40 hover:bg-amber-50/80 transition weekend-row'
+                        : 'hover:bg-slate-50 transition';
+
+                    // Cột Ngày / Thứ
+                    const tdDate = document.createElement('td');
+                    tdDate.className = 'py-2 px-3 border-r border-slate-200 text-center whitespace-nowrap';
+                    tdDate.innerHTML = `
+                        <div class="font-bold ${wknd ? 'text-rose-600' : 'text-slate-800'}">${displayDate}</div>
+                        <div class="text-xs ${wknd ? 'text-rose-500 font-semibold' : 'text-slate-500'}">${dayName}</div>
+                    `;
+                    tr.appendChild(tdDate);
+
+                    // Cột Trạng thái thời tiết
+                    const tdWeather = document.createElement('td');
+                    tdWeather.className = 'py-2 px-2 border-r border-slate-200 text-center';
+                    const weatherLabel = dayData.weather === 'severe' ? 'Bão / Lũ (Tăng cường)' : (dayData.weather === 'custom' ? 'Tăng cường' : 'Bình thường');
+                    const btnStyle = dayData.weather === 'severe'
+                        ? 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200'
+                        : (dayData.weather === 'custom'
+                            ? 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200');
+                    const btnIcon = dayData.weather === 'severe'
+                        ? '<i class="fa-solid fa-hurricane text-rose-600 mr-1"></i>'
+                        : (dayData.weather === 'custom'
+                            ? '<i class="fa-solid fa-sliders text-purple-600 mr-1"></i>'
+                            : '<i class="fa-solid fa-sun text-amber-500 mr-1"></i>');
+
+                    tdWeather.innerHTML = `
+                        <button type="button" onclick="window.openDayConfigModal('${dateStr}')" class="no-print px-2.5 py-1 rounded-lg border text-xs font-semibold transition ${btnStyle}">
+                            ${btnIcon}${dayData.weather === 'severe' ? 'Bão / Lũ' : (dayData.weather === 'custom' ? 'Tùy chỉnh' : 'Bình thường')}
+                        </button>
+                        <span class="hidden print-only text-[10pt] ${dayData.weather === 'severe' ? 'font-bold' : ''}">${weatherLabel}</span>
+                    `;
+                    tr.appendChild(tdWeather);
+
+                    // 4 Cột Ca trực
+                    const shiftCols = [
+                        { key: 'hydroDay', reqKey: 'hydroDay', team: 'hydro', type: 'day' },
+                        { key: 'hydroNight', reqKey: 'hydroNight', team: 'hydro', type: 'night' },
+                        { key: 'meteoDay', reqKey: 'meteoDay', team: 'meteo', type: 'day' },
+                        { key: 'meteoNight', reqKey: 'meteoNight', team: 'meteo', type: 'night' }
+                    ];
+
+                    shiftCols.forEach(col => {
+                        const td = document.createElement('td');
+                        td.className = `py-2 px-2.5 border-r border-slate-200 align-middle group relative ${appState.isUnlocked ? 'cursor-pointer' : 'cursor-default'}`;
+                        td.onclick = () => window.openShiftEditor(dateStr, col.team, col.type);
+
+                        const assignedIds = dayData.shifts[col.key] || [];
+                        const reqCount = dayData.req[col.reqKey] || 0;
+                        const isShortage = assignedIds.length < reqCount;
+
+                        let html = '<div class="min-h-[30px] flex flex-col justify-center gap-1"><div class="flex flex-wrap gap-1">';
+                        if (assignedIds.length === 0) {
+                            html += reqCount > 0
+                                ? `<span class="text-xs text-slate-400 italic no-print">+ Chọn (${reqCount})</span>`
+                                : '<span class="text-xs text-slate-300 italic">-</span>';
+                        } else {
+                            assignedIds.forEach((id, idx) => {
+                                const staff = appState.staff.find(s => s.id === id);
+                                const name = staff ? staff.name : 'Không rõ';
+                                const warnMsg = warnings[`${dateStr}_${col.key}_${id}`];
+                                const sep = idx < assignedIds.length - 1 ? '<span class="hidden print-only">, </span>' : '';
+
+                                if (warnMsg) {
+                                    html += `
+                                        <span title="${escapeHTML(warnMsg)}" class="badge-print inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">
+                                            <i class="fa-solid fa-triangle-exclamation text-rose-600 text-[10px] no-print"></i>
+                                            ${escapeHTML(name)}
+                                        </span>${sep}
+                                    `;
+                                } else {
+                                    const badgeStyle = col.team === 'hydro'
+                                        ? 'bg-sky-100/80 text-sky-900 border-sky-200'
+                                        : 'bg-indigo-100/80 text-indigo-900 border-indigo-200';
+                                    html += `
+                                        <span class="badge-print inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${badgeStyle}">
+                                            ${escapeHTML(name)}
+                                        </span>${sep}
+                                    `;
+                                }
+                            });
+                        }
+                        html += '</div>';
+
+                        if (isShortage && assignedIds.length > 0) {
+                            html += `<div class="text-[10px] text-amber-600 font-medium no-print"><i class="fa-solid fa-circle-exclamation mr-0.5"></i>Thiếu ${reqCount - assignedIds.length} người</div>`;
+                        }
+                        if (appState.isUnlocked) {
+                            html += '<span class="opacity-0 group-hover:opacity-100 transition absolute top-1.5 right-1.5 text-slate-400 hover:text-sky-600 text-xs no-print"><i class="fa-solid fa-pen-to-square"></i></span>';
+                        }
+                        html += '</div>';
+
+                        td.innerHTML = html;
+                        tr.appendChild(td);
+                    });
+
+                    // Cột Ghi chú
+                    const tdNote = document.createElement('td');
+                    tdNote.className = 'py-1.5 px-2 align-middle';
+                    const noteVal = dayData.note || '';
+                    if (appState.isUnlocked) {
+                        tdNote.innerHTML = `
+                            <input type="text" value="${escapeHTML(noteVal)}"
+                                onchange="window.updateDayNote('${dateStr}', this.value)"
+                                placeholder="Nhập ghi chú..."
+                                class="w-full text-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-sky-400 focus:bg-white rounded px-2 py-1 outline-none no-print">
+                            <span class="hidden print-only text-[10pt]">${escapeHTML(noteVal)}</span>
+                        `;
+                    } else {
+                        tdNote.innerHTML = `
+                            <span class="text-xs text-slate-600 px-2 py-1 block no-print">${noteVal ? escapeHTML(noteVal) : '<span class="text-slate-300 italic">-</span>'}</span>
+                            <span class="hidden print-only text-[10pt]">${escapeHTML(noteVal)}</span>
+                        `;
+                    }
+                    tr.appendChild(tdNote);
+
+                    tbody.appendChild(tr);
+                });
+            }
+
+            window.updateDayNote = function(dateStr, val) {
+                if (!requireSupervisorPermission()) return;
+                if (appState.schedule[dateStr]) {
+                    appState.schedule[dateStr].note = val.trim();
+                    saveToStorage();
+                }
+            };
+
+            // ==========================================
+            // 6. CÁC MODAL XỬ LÝ (CA TRỰC, THỜI TIẾT, NHÂN SỰ, ĐỊNH MỨC)
+            // ==========================================
+            window.closeModal = function(modalId) {
+                const el = document.getElementById(modalId);
+                if (el) el.classList.add('hidden');
+            };
+
+            function openConfirmModal(title, msg, onConfirm) {
+                document.getElementById('confirm-modal-title').textContent = title;
+                document.getElementById('confirm-modal-msg').textContent = msg;
+                pendingConfirmCallback = onConfirm;
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            }
+
+            document.getElementById('confirm-modal-ok-btn').onclick = function() {
+                window.closeModal('confirm-modal');
+                if (typeof pendingConfirmCallback === 'function') {
+                    pendingConfirmCallback();
+                    pendingConfirmCallback = null;
+                }
+            };
+
+            // Modal chỉnh sửa ca trực
+            window.openShiftEditor = function(dateStr, team, shiftType) {
+                if (!requireSupervisorPermission()) return;
+                editingShiftContext = { dateStr, team, shiftType };
+                const dayData = appState.schedule[dateStr];
+                const shiftKey = `${team}${shiftType === 'day' ? 'Day' : 'Night'}`;
+                const reqCount = dayData.req[shiftKey] || 0;
+                const currentAssigned = dayData.shifts[shiftKey] || [];
+
+                const header = document.getElementById('shift-modal-header');
+                header.className = `px-5 py-3.5 text-white flex items-center justify-between ${team === 'hydro' ? 'bg-sky-700' : 'bg-indigo-700'}`;
+
+                document.getElementById('shift-modal-title').textContent = team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
+                document.getElementById('shift-modal-subtitle').textContent = `${getVietnameseDayName(dateStr)}, ${formatDisplayDate(dateStr)} • ${shiftType === 'day' ? 'Ca Ngày (07h-19h)' : 'Ca Đêm (19h-07h)'}`;
+                document.getElementById('shift-modal-req').textContent = `${reqCount} người trực`;
+
+                const listEl = document.getElementById('shift-modal-staff-list');
+                listEl.innerHTML = '';
+
+                const teamMembers = appState.staff.filter(s => s.team === team);
+                teamMembers.forEach(m => {
+                    const checked = currentAssigned.includes(m.id);
+                    const otherShiftKey = `${team}${shiftType === 'day' ? 'Night' : 'Day'}`;
+                    const alsoInOtherShift = dayData.shifts[otherShiftKey].includes(m.id);
+
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition';
+                    label.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" value="${m.id}" ${checked ? 'checked' : ''} onchange="window.checkShiftModalWarnings()" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500">
+                            <span class="text-sm font-medium text-slate-800">${escapeHTML(m.name)}</span>
+                        </div>
+                        ${alsoInOtherShift ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold">Đang trực ca kia</span>' : ''}
+                    `;
+                    listEl.appendChild(label);
+                });
+
+                window.checkShiftModalWarnings();
+                document.getElementById('shift-modal').classList.remove('hidden');
+            };
+
+            window.checkShiftModalWarnings = function() {
+                if (!editingShiftContext) return;
+                const { dateStr, team, shiftType } = editingShiftContext;
+                const dayData = appState.schedule[dateStr];
+                const shiftKey = `${team}${shiftType === 'day' ? 'Day' : 'Night'}`;
+                const reqCount = dayData.req[shiftKey] || 0;
+
+                const checkboxes = document.querySelectorAll('#shift-modal-staff-list input[type="checkbox"]:checked');
+                const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+
+                const warnBox = document.getElementById('shift-modal-warning');
+                const warnText = document.getElementById('shift-modal-warning-text');
+
+                if (selectedIds.length !== reqCount) {
+                    warnBox.classList.remove('hidden');
+                    warnText.textContent = `Số lượng đang chọn là ${selectedIds.length} người (Định mức ngày này yêu cầu ${reqCount} người).`;
+                } else {
+                    warnBox.classList.add('hidden');
+                }
+            };
+
+            window.saveShiftAssignment = function() {
+                if (!editingShiftContext) return;
+                const { dateStr, team, shiftType } = editingShiftContext;
+                const shiftKey = `${team}${shiftType === 'day' ? 'Day' : 'Night'}`;
+
+                const checkboxes = document.querySelectorAll('#shift-modal-staff-list input[type="checkbox"]:checked');
+                appState.schedule[dateStr].shifts[shiftKey] = Array.from(checkboxes).map(cb => cb.value);
+
+                saveToStorage();
+                renderAll();
+                window.closeModal('shift-modal');
+                showToast('Đã cập nhật phân công ca trực.', 'success');
+            };
+
+            // Modal cấu hình thời tiết ngày
+            window.openDayConfigModal = function(dateStr) {
+                if (!requireSupervisorPermission()) return;
+                editingDayConfigDate = dateStr;
+                const dayData = appState.schedule[dateStr];
+                document.getElementById('day-config-subtitle').textContent = `${getVietnameseDayName(dateStr)}, ngày ${formatDisplayDate(dateStr)}`;
+
+                document.getElementById('cfg-hydro-day').value = dayData.req.hydroDay;
+                document.getElementById('cfg-hydro-night').value = dayData.req.hydroNight;
+                document.getElementById('cfg-meteo-day').value = dayData.req.meteoDay;
+                document.getElementById('cfg-meteo-night').value = dayData.req.meteoNight;
+
+                window.selectWeatherTypeInModal(dayData.weather || 'normal', false);
+                document.getElementById('day-config-modal').classList.remove('hidden');
+            };
+
+            window.selectWeatherTypeInModal = function(type, autoFill = true) {
+                modalSelectedWeatherType = type;
+                ['normal', 'severe', 'custom'].forEach(t => {
+                    const btn = document.getElementById(`btn-wtype-${t}`);
+                    if (!btn) return;
+                    if (t === type) {
+                        btn.className = 'py-2 px-2 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-900 text-xs font-bold flex flex-col items-center gap-1 transition';
+                    } else {
+                        btn.className = 'py-2 px-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex flex-col items-center gap-1 transition';
+                    }
+                });
+
+                if (autoFill && (type === 'normal' || type === 'severe')) {
+                    const p = appState.presets[type];
+                    document.getElementById('cfg-hydro-day').value = p.hydroDay;
+                    document.getElementById('cfg-hydro-night').value = p.hydroNight;
+                    document.getElementById('cfg-meteo-day').value = p.meteoDay;
+                    document.getElementById('cfg-meteo-night').value = p.meteoNight;
+                }
+            };
+
+            window.saveDayConfig = function() {
+                if (!editingDayConfigDate) return;
+                const d = appState.schedule[editingDayConfigDate];
+                d.weather = modalSelectedWeatherType;
+                d.req = {
+                    hydroDay: Math.max(0, parseInt(document.getElementById('cfg-hydro-day').value, 10) || 0),
+                    hydroNight: Math.max(0, parseInt(document.getElementById('cfg-hydro-night').value, 10) || 0),
+                    meteoDay: Math.max(0, parseInt(document.getElementById('cfg-meteo-day').value, 10) || 0),
+                    meteoNight: Math.max(0, parseInt(document.getElementById('cfg-meteo-night').value, 10) || 0)
+                };
+
+                saveToStorage();
+                renderAll();
+                window.closeModal('day-config-modal');
+                showToast(`Đã cập nhật chế độ thời tiết ngày ${formatDisplayDate(editingDayConfigDate)}.`, 'success');
+            };
+
+            window.applyBulkWeather = function(type) {
+                if (!requireSupervisorPermission()) return;
+                const dates = getActiveDateList();
+                const preset = appState.presets[type];
+                if (!preset) return;
+
+                dates.forEach(dStr => {
+                    if (appState.schedule[dStr]) {
+                        appState.schedule[dStr].weather = type;
+                        appState.schedule[dStr].req = { ...preset };
+                    }
+                });
+
+                saveToStorage();
+                renderAll();
+                showToast(`Đã áp dụng chế độ "${type === 'severe' ? 'Bão / Lũ tăng cường' : 'Bình thường'}" cho toàn kỳ.`, 'success');
+            };
+
+            // Modal Quản lý Nhân sự
+            window.openStaffModal = function() {
+                if (!requireSupervisorPermission()) return;
+                renderStaffModalLists();
+                document.getElementById('staff-modal').classList.remove('hidden');
+            };
+
+            function renderStaffModalLists() {
+                const hydroList = document.getElementById('modal-hydro-list');
+                const meteoList = document.getElementById('modal-meteo-list');
+                const hydroMembers = appState.staff.filter(s => s.team === 'hydro');
+                const meteoMembers = appState.staff.filter(s => s.team === 'meteo');
+
+                document.getElementById('modal-hydro-count').textContent = hydroMembers.length;
+                document.getElementById('modal-meteo-count').textContent = meteoMembers.length;
+
+                const buildItemHTML = (m) => `
+                    <li class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 gap-2">
+                        <input type="text" value="${escapeHTML(m.name)}" onchange="window.renameStaffMember('${m.id}', this.value)"
+                            class="text-sm font-medium text-slate-800 bg-transparent border border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white rounded px-2 py-0.5 flex-1 outline-none">
+                        <button type="button" onclick="window.removeStaffMember('${m.id}')" title="Xóa cán bộ" class="text-slate-400 hover:text-rose-600 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </li>
+                `;
+
+                hydroList.innerHTML = hydroMembers.map(buildItemHTML).join('');
+                meteoList.innerHTML = meteoMembers.map(buildItemHTML).join('');
+            }
+
+            window.addStaffMember = function() {
+                const nameInput = document.getElementById('new-staff-name');
+                const teamSelect = document.getElementById('new-staff-team');
+                const name = nameInput.value.trim();
+                if (!name) {
+                    showToast('Vui lòng nhập họ và tên cán bộ!', 'warning');
+                    return;
+                }
+                const newId = 'st_' + Date.now();
+                appState.staff.push({ id: newId, name: name, team: teamSelect.value });
+                nameInput.value = '';
+                saveToStorage();
+                renderStaffModalLists();
+                renderAll();
+                showToast(`Đã thêm cán bộ ${name}.`, 'success');
+            };
+
+            window.renameStaffMember = function(id, newName) {
+                const trimmed = newName.trim();
+                if (!trimmed) return;
+                const staff = appState.staff.find(s => s.id === id);
+                if (staff) {
+                    staff.name = trimmed;
+                    saveToStorage();
+                    renderAll();
+                    showToast('Đã cập nhật tên cán bộ.', 'info');
+                }
+            };
+
+            window.removeStaffMember = function(id) {
+                const staff = appState.staff.find(s => s.id === id);
+                if (!staff) return;
+                openConfirmModal(
+                    'Xóa cán bộ khỏi danh sách?',
+                    `Bạn có chắc chắn muốn xóa đồng chí "${staff.name}" khỏi danh sách phân ca?`,
+                    function() {
+                        appState.staff = appState.staff.filter(s => s.id !== id);
+                        Object.keys(appState.schedule).forEach(dStr => {
+                            const sh = appState.schedule[dStr].shifts;
+                            sh.hydroDay = sh.hydroDay.filter(x => x !== id);
+                            sh.hydroNight = sh.hydroNight.filter(x => x !== id);
+                            sh.meteoDay = sh.meteoDay.filter(x => x !== id);
+                            sh.meteoNight = sh.meteoNight.filter(x => x !== id);
+                        });
+                        saveToStorage();
+                        renderStaffModalLists();
+                        renderAll();
+                        showToast(`Đã xóa đồng chí ${staff.name}.`, 'info');
+                    }
+                );
+            };
+
+            window.resetDefaultStaff = function() {
+                openConfirmModal(
+                    'Khôi phục danh sách mặc định?',
+                    'Danh sách nhân sự sẽ trở về 10 cán bộ chuẩn ban đầu (4 Thủy văn, 6 Khí tượng).',
+                    function() {
+                        appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+                        saveToStorage();
+                        renderStaffModalLists();
+                        renderAll();
+                        showToast('Đã khôi phục danh sách 10 cán bộ mặc định.', 'success');
+                    }
+                );
+            };
+
+            // Modal Định mức mặc định
+            window.openPresetsModal = function() {
+                if (!requireSupervisorPermission()) return;
+                document.getElementById('preset-norm-hd').value = appState.presets.normal.hydroDay;
+                document.getElementById('preset-norm-hn').value = appState.presets.normal.hydroNight;
+                document.getElementById('preset-norm-md').value = appState.presets.normal.meteoDay;
+                document.getElementById('preset-norm-mn').value = appState.presets.normal.meteoNight;
+
+                document.getElementById('preset-sev-hd').value = appState.presets.severe.hydroDay;
+                document.getElementById('preset-sev-hn').value = appState.presets.severe.hydroNight;
+                document.getElementById('preset-sev-md').value = appState.presets.severe.meteoDay;
+                document.getElementById('preset-sev-mn').value = appState.presets.severe.meteoNight;
+
+                document.getElementById('presets-modal').classList.remove('hidden');
+            };
+
+            window.saveWeatherPresets = function() {
+                appState.presets = {
+                    normal: {
+                        hydroDay: Math.max(0, parseInt(document.getElementById('preset-norm-hd').value, 10) || 0),
+                        hydroNight: Math.max(0, parseInt(document.getElementById('preset-norm-hn').value, 10) || 0),
+                        meteoDay: Math.max(0, parseInt(document.getElementById('preset-norm-md').value, 10) || 0),
+                        meteoNight: Math.max(0, parseInt(document.getElementById('preset-norm-mn').value, 10) || 0)
+                    },
+                    severe: {
+                        hydroDay: Math.max(0, parseInt(document.getElementById('preset-sev-hd').value, 10) || 0),
+                        hydroNight: Math.max(0, parseInt(document.getElementById('preset-sev-hn').value, 10) || 0),
+                        meteoDay: Math.max(0, parseInt(document.getElementById('preset-sev-md').value, 10) || 0),
+                        meteoNight: Math.max(0, parseInt(document.getElementById('preset-sev-mn').value, 10) || 0)
+                    }
+                };
+                saveToStorage();
+                window.closeModal('presets-modal');
+                showToast('Đã lưu định mức quân số tiêu chuẩn.', 'success');
+            };
+
+            // ==========================================
+            // 7. XUẤT FILE EXCEL & IN ẤN
+            // ==========================================
+            function updatePrintHeader() {
+                const titleEl = document.getElementById('print-doc-title');
+                const subEl = document.getElementById('print-period-subtitle');
+                if (titleEl) {
+                    titleEl.textContent = appState.activeTab === 'matrix'
+                        ? 'BẢNG TÍCH PHÂN CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG'
+                        : 'LỊCH PHÂN CÔNG CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG';
+                }
+                if (subEl) {
+                    subEl.textContent = `Từ ngày ${formatDisplayDate(appState.startDate)} đến ngày ${formatDisplayDate(appState.endDate)}`;
+                }
+            }
+
+            window.printSchedule = function() {
+                updatePrintHeader();
+                window.print();
+            };
+
+            window.exportToExcel = function() {
+                const dates = getActiveDateList();
+                if (dates.length === 0) return;
+
+                const getNames = (ids) => (ids || []).map(id => {
+                    const s = appState.staff.find(x => x.id === id);
+                    return s ? s.name : '';
+                }).filter(Boolean).join('; ');
+
+                // BOM UTF-8 chuẩn tiếng Việt cho Excel
+                let csv = '\uFEFF';
+                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV\n';
+                const dateHeaders = dates.map(d => formatDisplayDate(d).slice(0, 5));
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '\n';
+
+                appState.staff.forEach((s, idx) => {
+                    const teamLabel = s.team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
+                    const dayKey = `${s.team}Day`;
+                    const nightKey = `${s.team}Night`;
+                    let cDay = 0, cNight = 0, cWknd = 0, cTotal = 0;
+
+                    const cells = dates.map(dateStr => {
+                        const d = appState.schedule[dateStr];
+                        const wknd = isWeekend(dateStr);
+                        const hasD = d && d.shifts[dayKey].includes(s.id);
+                        const hasN = d && d.shifts[nightKey].includes(s.id);
+                        if (hasD) { cDay++; cTotal++; if (wknd) cWknd++; }
+                        if (hasN) { cNight++; cTotal++; if (wknd) cWknd++; }
+                        if (hasD && hasN) return 'NĐ';
+                        if (hasD) return 'N';
+                        if (hasN) return 'Đ';
+                        return '';
+                    });
+
+                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '\n';
+                });
+
+                csv += '\nBẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO\n';
+                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú\n';
+
+                dates.forEach(dateStr => {
+                    const d = appState.schedule[dateStr];
+                    const wLabel = d.weather === 'severe' ? 'Bão / Lũ' : (d.weather === 'custom' ? 'Tăng cường' : 'Bình thường');
+                    csv += [
+                        formatDisplayDate(dateStr),
+                        getVietnameseDayName(dateStr),
+                        wLabel,
+                        `"${getNames(d.shifts.hydroDay)}"`,
+                        `"${getNames(d.shifts.hydroNight)}"`,
+                        `"${getNames(d.shifts.meteoDay)}"`,
+                        `"${getNames(d.shifts.meteoNight)}"`,
+                        `"${(d.note || '').replace(/"/g, '""')}"`
+                    ].join(',') + '\n';
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Phan_Ca_Truc_KTTV_${appState.startDate}_den_${appState.endDate}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showToast('Đã xuất file Excel (CSV UTF-8) gồm cả 2 bảng!', 'success');
+            };
+
+            // ==========================================
+            // 8. KHỞI TẠO ỨNG DỤNG AN TOÀN
+            // ==========================================
+            function setupFirebaseRealtimeListeners() {
+                if (!firebaseDb || !rosterDbRef) {
+                    updateSyncBadge('error', 'Chỉ lưu cục bộ');
+                    return;
+                }
+
+                // Theo dõi trạng thái kết nối mạng với Firebase
+                firebaseDb.ref('.info/connected').on('value', (snap) => {
+                    if (snap.val() === true) {
+                        updateSyncBadge('connected', 'Đã đồng bộ đám mây');
+                    } else {
+                        updateSyncBadge('error', 'Mất kết nối đám mây');
+                    }
+                });
+
+                // Lắng nghe thay đổi mật khẩu Trưởng ca trên đám mây
+                if (passDbRef) {
+                    passDbRef.on('value', (snap) => {
+                        const cloudPass = snap.val();
+                        if (typeof cloudPass === 'string' && cloudPass.length >= 4) {
+                            appState.supervisorPass = cloudPass;
+                            try { localStorage.setItem(AUTH_PASS_KEY, cloudPass); } catch (e) {}
+                        }
+                    });
+                }
+
+                // Lắng nghe dữ liệu phân ca thời gian thực
+                rosterDbRef.on('value', (snapshot) => {
+                    const cloudData = snapshot.val();
+                    if (!cloudData) {
+                        // Nếu đám mây chưa có dữ liệu lần đầu, đẩy dữ liệu khởi tạo lên
+                        if (!hasInitialCloudSync) {
+                            hasInitialCloudSync = true;
+                            saveToStorage();
+                        }
+                        return;
+                    }
+
+                    hasInitialCloudSync = true;
+                    isApplyingRemoteUpdate = true;
+                    try {
+                        if (cloudData.staff) {
+                            appState.staff = Array.isArray(cloudData.staff) ? cloudData.staff : Object.values(cloudData.staff);
+                        }
+                        if (cloudData.presets && cloudData.presets.normal && cloudData.presets.severe) {
+                            appState.presets = cloudData.presets;
+                        }
+                        if (cloudData.startDate && cloudData.endDate) {
+                            appState.startDate = cloudData.startDate;
+                            appState.endDate = cloudData.endDate;
+                            const startInput = document.getElementById('input-start-date');
+                            const endInput = document.getElementById('input-end-date');
+                            if (startInput) startInput.value = appState.startDate;
+                            if (endInput) endInput.value = appState.endDate;
+                        }
+                        if (cloudData.schedule) {
+                            appState.schedule = normalizeFirebaseSchedule(cloudData.schedule);
+                        }
+                        ensureScheduleDatesExist();
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                                staff: appState.staff,
+                                presets: appState.presets,
+                                startDate: appState.startDate,
+                                endDate: appState.endDate,
+                                schedule: appState.schedule
+                            }));
+                        } catch (e) {}
+                        renderAll();
+                    } finally {
+                        isApplyingRemoteUpdate = false;
+                    }
+                }, (err) => {
+                    console.error('Firebase read error:', err);
+                    updateSyncBadge('error', 'Không đọc được đám mây');
+                });
+            }
+
+            function initApp() {
+                loadFromStorage();
+                loadPasswordFromStorage();
+
+                if (!appState.startDate || !appState.endDate) {
+                    const today = new Date();
+                    const end = new Date(today);
+                    end.setDate(today.getDate() + 14); // Mặc định 15 ngày
+                    appState.startDate = toISODate(today);
+                    appState.endDate = toISODate(end);
+                }
+
+                const startInput = document.getElementById('input-start-date');
+                const endInput = document.getElementById('input-end-date');
+                if (startInput) startInput.value = appState.startDate;
+                if (endInput) endInput.value = appState.endDate;
+
+                ensureScheduleDatesExist();
+                updateAuthUI();
+                renderAll();
+                setupFirebaseRealtimeListeners();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        })();
+    </script>
+</body>
+</html>
