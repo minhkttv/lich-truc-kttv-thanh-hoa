@@ -1388,10 +1388,10 @@
 
             function escapeHTML(str) {
                 return String(str)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;');
+                    .replace(/&/g, '&')
+                    .replace(/</g, '<')
+                    .replace(/>/g, '>')
+                    .replace(/"/g, '"');
             }
 
             // ==========================================
@@ -2429,12 +2429,10 @@
                     return s ? s.name : '';
                 }).filter(Boolean).join('; ');
 
-                let csv = '﻿';
-                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV
-';
+                let csv = '\uFEFF';
+                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV\n';
                 const dateHeaders = dates.map(d => formatDisplayDate(d).slice(0, 5));
-                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '
-';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '\n';
 
                 appState.staff.forEach((s, idx) => {
                     const teamLabel = s.team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
@@ -2455,15 +2453,11 @@
                         return '';
                     });
 
-                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '
-';
+                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '\n';
                 });
 
-                csv += '
-BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO
-';
-                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú
-';
+                csv += '\nBẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO\n';
+                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú\n';
 
                 dates.forEach(dateStr => {
                     const d = appState.schedule[dateStr];
@@ -2477,8 +2471,7 @@ BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO
                         `"${getNames(d.shifts.meteoDay)}"`,
                         `"${getNames(d.shifts.meteoNight)}"`,
                         `"${(d.note || '').replace(/"/g, '""')}"`
-                    ].join(',') + '
-';
+                    ].join(',') + '\n';
                 });
 
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
