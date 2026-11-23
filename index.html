@@ -3059,11 +3059,9 @@
 
                 const dateHeaders = dates.map(d => formatDisplayDate(d).slice(0, 5));
 
-                let csv = '﻿';
-                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV
-';
-                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '
-';
+                let csv = '\uFEFF';
+                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV\n';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '\n';
 
                 const forecastStaff = appState.staff.filter(s => s.team === 'hydro' || s.team === 'meteo');
                 forecastStaff.forEach((s, idx) => {
@@ -3085,15 +3083,11 @@
                         return '';
                     });
 
-                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '
-';
+                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '\n';
                 });
 
-                csv += '
-BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC DỰ BÁO BÁO CÁO LÃNH ĐẠO
-';
-                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú
-';
+                csv += '\nBẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC DỰ BÁO BÁO CÁO LÃNH ĐẠO\n';
+                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú\n';
 
                 dates.forEach(dateStr => {
                     const d = appState.schedule[dateStr];
@@ -3107,16 +3101,11 @@ BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC DỰ BÁO BÁO CÁO LÃNH ĐẠO
                         `"${getNames(d.shifts.meteoDay)}"`,
                         `"${getNames(d.shifts.meteoNight)}"`,
                         `"${(d.note || '').replace(/"/g, '""')}"`
-                    ].join(',') + '
-';
+                    ].join(',') + '\n';
                 });
 
-                // Bảng 3: Trực Bảo vệ cơ quan (19h00 - 07h00, 18 CBVC)
-                csv += '
-BẢNG 3: LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 - 07H00)
-';
-                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Trực T7/CN', 'Tổng đêm trong kỳ', 'Lũy kế toàn mùa'].join(',') + '
-';
+                csv += '\nBẢNG 3: LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 - 07H00)\n';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Trực T7/CN', 'Tổng đêm trong kỳ', 'Lũy kế toàn mùa'].join(',') + '\n';
 
                 const cumMap = {};
                 Object.keys(appState.guardSchedule).forEach(dk => {
@@ -3137,8 +3126,7 @@ BẢNG 3: LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 - 07H00)
                         }
                         return '';
                     });
-                    csv += [idx + 1, `"${getTeamFullLabel(s.team)}"`, `"${s.name}"`, ...cells, gWknd, gTotal, cumMap[s.id] || 0].join(',') + '
-';
+                    csv += [idx + 1, `"${getTeamFullLabel(s.team)}"`, `"${s.name}"`, ...cells, gWknd, gTotal, cumMap[s.id] || 0].join(',') + '\n';
                 });
 
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
