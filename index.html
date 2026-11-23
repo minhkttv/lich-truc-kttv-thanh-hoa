@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Phân Ca Trực Dự Báo Khí Tượng Thủy Văn</title>
+    <title>Hệ Thống Phân Ca Trực Dự Báo Khí Tượng Thủy Văn & Trực Bảo Vệ</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -17,7 +17,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Thanh cuộn gọn gàng */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -33,7 +32,6 @@
             background: #94a3b8;
         }
 
-        /* Cố định cột trái & phải trong bảng Ma trận */
         .sticky-col-left {
             position: sticky;
             left: 0;
@@ -45,7 +43,6 @@
             z-index: 10;
         }
 
-        /* Khóa mờ tổ không thuộc quyền thao tác */
         .team-locked-row {
             opacity: 0.52;
             background-color: #f8fafc;
@@ -147,9 +144,9 @@
                         <i class="fa-solid fa-cloud-sun-rain text-2xl text-sky-300"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg sm:text-xl font-bold tracking-tight">PHÂN CA TRỰC DỰ BÁO KHÍ TƯỢNG THỦY VĂN</h1>
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight">PHÂN CA TRỰC DỰ BÁO KTTV & TRỰC BẢO VỆ CƠ QUAN</h1>
                         <div class="flex flex-wrap items-center gap-2 mt-0.5">
-                            <p class="text-xs text-sky-200">Tổ Dự báo Thủy văn & Tổ Dự báo Khí tượng</p>
+                            <p class="text-xs text-sky-200">Tổ Dự báo Thủy văn • Tổ Dự báo Khí tượng • Công đoàn (Trực đêm T12–T4)</p>
                             <span id="firebase-sync-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30">
                                 <i class="fa-solid fa-cloud-arrow-up animate-pulse"></i>
                                 <span>Đang kết nối đám mây...</span>
@@ -160,7 +157,7 @@
 
                 <!-- Các nút chức năng chính -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- Khu vực trạng thái phân quyền Trưởng ca -->
+                    <!-- Khu vực trạng thái phân quyền -->
                     <div id="auth-locked-bar" class="flex items-center gap-1.5 bg-amber-500/20 border border-amber-300/40 px-2.5 py-1.5 rounded-xl">
                         <span class="text-xs text-amber-200 font-medium flex items-center gap-1.5">
                             <i class="fa-solid fa-eye"></i>
@@ -190,7 +187,7 @@
 
                     <button type="button" id="btn-manage-staff" onclick="window.openStaffModal()" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 border border-white/15">
                         <i class="fa-solid fa-users-gear"></i>
-                        <span>Nhân sự (<span id="total-staff-badge">10</span>)</span>
+                        <span>Nhân sự (<span id="total-staff-badge">18</span>)</span>
                     </button>
                     <button type="button" id="btn-manage-presets" onclick="window.openPresetsModal()" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 border border-white/15">
                         <i class="fa-solid fa-sliders"></i>
@@ -217,7 +214,7 @@
             <div class="flex justify-between items-start mb-3">
                 <div class="text-center w-5/12">
                     <p class="uppercase text-[11pt]">ĐÀI KHÍ TƯỢNG THỦY VĂN TỈNH</p>
-                    <p class="font-bold uppercase text-[11pt] underline underline-offset-4">PHÒNG DỰ BÁO KTTV</p>
+                    <p id="print-unit-sub" class="font-bold uppercase text-[11pt] underline underline-offset-4">PHÒNG DỰ BÁO KTTV</p>
                 </div>
                 <div class="text-center w-7/12">
                     <p class="font-bold uppercase text-[11pt]">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
@@ -232,17 +229,21 @@
 
         <!-- Thanh điều khiển & Chuyển Tab (Không in) -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3.5 no-print">
-            <!-- Hàng 1: 2 Tab chính + Chọn thời gian -->
+            <!-- Hàng 1: 3 Tab chính + Chọn thời gian -->
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
-                <!-- 2 Tab chuyển đổi -->
+                <!-- 3 Tab chuyển đổi -->
                 <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    <button type="button" id="tab-btn-matrix" onclick="window.switchViewTab('matrix')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2">
+                    <button type="button" id="tab-btn-matrix" onclick="window.switchViewTab('matrix')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2">
                         <i class="fa-solid fa-table-cells text-sky-600"></i>
-                        <span>1. Ma trận Tích phân ca (Chấm trực)</span>
+                        <span>1. Ma trận Dự báo KTTV</span>
                     </button>
-                    <button type="button" id="tab-btn-report" onclick="window.switchViewTab('report')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <button type="button" id="tab-btn-report" onclick="window.switchViewTab('report')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
                         <i class="fa-solid fa-file-signature text-indigo-600"></i>
-                        <span>2. Bảng Tổng hợp Báo cáo Lãnh đạo</span>
+                        <span>2. Tổng hợp Báo cáo Lãnh đạo</span>
+                    </button>
+                    <button type="button" id="tab-btn-guard" onclick="window.switchViewTab('guard')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                        <i class="fa-solid fa-shield-cat text-teal-600"></i>
+                        <span>3. Trực Bảo vệ Cơ quan (T12–T4)</span>
                     </button>
                 </div>
 
@@ -281,7 +282,18 @@
 
                 <div id="report-guide-bar" class="hidden flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <span class="font-semibold text-indigo-800"><i class="fa-solid fa-circle-check mr-1"></i>Bảng báo cáo Lãnh đạo:</span>
-                    <span>Tự động đồng bộ từ Ma trận Tích phân ca. Mở khóa Trưởng ca để chỉnh trực tiếp hoặc thêm ghi chú.</span>
+                    <span>Tự động đồng bộ từ Ma trận Dự báo KTTV. Mở khóa Trưởng ca để chỉnh trực tiếp hoặc thêm ghi chú.</span>
+                </div>
+
+                <div id="guard-guide-bar" class="hidden flex flex-wrap items-center gap-2.5 text-xs text-slate-600">
+                    <span class="font-semibold text-teal-800"><i class="fa-solid fa-shield-halved mr-1"></i>Trực Bảo vệ (19h00 – 07h00):</span>
+                    <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-900 font-bold border border-teal-300">Đ</span><span>1 người / đêm • Nghĩa vụ chia đều 18 CBVC (T12–T4)</span>
+                    <span id="guard-season-badge" class="hidden px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">
+                        <i class="fa-solid fa-calendar-check mr-1"></i>Đang trong mùa trực T12–T4
+                    </span>
+                    <span id="guard-offseason-badge" class="hidden px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-300 font-medium">
+                        <i class="fa-solid fa-circle-info mr-1"></i>Ngoài mùa T12–T4 (vẫn có thể lập/xem lịch)
+                    </span>
                 </div>
 
                 <div id="supervisor-toolbar-actions" class="flex flex-wrap items-center gap-2">
@@ -294,6 +306,11 @@
                             <i class="fa-solid fa-hurricane text-rose-500 mr-1"></i>Bão / Lũ
                         </button>
                     </div>
+
+                    <button type="button" id="btn-guard-members" onclick="window.openGuardMembersModal()" class="hidden px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check"></i>
+                        <span>Danh sách 18 CBVC (<span id="guard-eligible-count">18</span>)</span>
+                    </button>
 
                     <button type="button" onclick="window.autoAssignSchedule()" class="px-3.5 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -318,7 +335,7 @@
         </section>
 
         <!-- ===================================================================== -->
-        <!-- TAB 1: MA TRẬN TÍCH PHÂN CA (CHẤM TRỰC NHANH)                         -->
+        <!-- TAB 1: MA TRẬN TÍCH PHÂN CA DỰ BÁO KTTV                               -->
         <!-- ===================================================================== -->
         <section id="view-matrix-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
@@ -363,8 +380,36 @@
             </div>
         </section>
 
-        <!-- Khung ký duyệt khi In (3 bên chuẩn cơ quan) -->
-        <div class="hidden print-only mt-6 pt-2">
+        <!-- ===================================================================== -->
+        <!-- TAB 3: TRỰC BẢO VỆ CƠ QUAN (CA ĐÊM 19H–07H, T12–T4, 18 CBVC)          -->
+        <!-- ===================================================================== -->
+        <section id="view-guard-container" class="hidden space-y-4">
+            <!-- Bảng ma trận chấm trực đêm bảo vệ cơ quan -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-4 py-2.5 bg-teal-50/80 border-b border-teal-200 flex flex-wrap items-center justify-between gap-2 no-print">
+                    <div class="flex items-center gap-2 text-xs text-teal-950">
+                        <span class="font-bold"><i class="fa-solid fa-moon text-teal-700 mr-1"></i>LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 – 07H00)</span>
+                        <span class="text-teal-700">• Mỗi đêm 1 CBVC trực, nghĩa vụ chia đều giữa 18 CBVC</span>
+                    </div>
+                    <div id="guard-role-hint" class="text-xs font-semibold text-teal-800">
+                        Quyền phân trực: Tổ trưởng Công đoàn (cd2026) hoặc Quản trị (kttv2026)
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="guard-matrix-table" class="w-full text-left border-collapse select-none">
+                        <thead id="guard-thead"></thead>
+                        <tbody id="guard-tbody" class="divide-y divide-slate-200 text-xs"></tbody>
+                        <tfoot id="guard-tfoot" class="border-t-2 border-slate-300 bg-slate-50 text-xs"></tfoot>
+                    </table>
+                </div>
+                <div class="hidden print-only mt-2 text-[10pt] italic">
+                    <strong>Ghi chú:</strong> <strong>Đ</strong>: Trực đêm bảo vệ cơ quan (từ 19h00 ngày hôm trước đến 07h00 ngày hôm sau); Mỗi đêm bố trí 01 CBVC trực; Ô nền xám: Thứ Bảy, Chủ Nhật.
+                </div>
+            </div>
+        </section>
+
+        <!-- Khung ký duyệt khi In (Thay đổi theo Tab Dự báo hoặc Tab Công đoàn) -->
+        <div id="print-sign-forecast" class="hidden print-only mt-6 pt-2">
             <div class="grid grid-cols-3 gap-4 text-center text-[11pt]">
                 <div>
                     <p class="font-bold uppercase">TỔ TRƯỞNG TỔ DỰ BÁO THỦY VĂN</p>
@@ -385,10 +430,26 @@
             </div>
         </div>
 
+        <div id="print-sign-guard" class="hidden print-only mt-6 pt-2">
+            <div class="grid grid-cols-2 gap-8 text-center text-[11pt]">
+                <div>
+                    <p class="font-bold uppercase">TỔ TRƯỞNG CÔNG ĐOÀN</p>
+                    <p class="text-[10pt] italic">(Ký và ghi rõ họ tên)</p>
+                    <div class="h-20"></div>
+                </div>
+                <div>
+                    <p class="italic text-[10pt] mb-0.5">Ngày ...... tháng ...... năm 20....</p>
+                    <p class="font-bold uppercase">LÃNH ĐẠO ĐÀI DUYỆT</p>
+                    <p class="text-[10pt] italic">(Ký, đóng dấu)</p>
+                    <div class="h-20"></div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 no-print mt-auto">
-        <p>Hệ thống Phân Ca Trực Dự Báo Khí Tượng Thủy Văn • Tự động đồng bộ thời gian thực qua Firebase Realtime Database.</p>
+        <p>Hệ thống Phân Ca Trực Dự Báo KTTV & Trực Bảo Vệ Cơ Quan • Tự động đồng bộ thời gian thực qua Firebase Realtime Database.</p>
     </footer>
 
     <!-- ===================================================================== -->
@@ -433,7 +494,7 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
             <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-base">Cấu hình trực theo thời tiết</h3>
+                    <h3 class="font-bold text-base">Cấu hình trực dự báo theo thời tiết</h3>
                     <p class="text-xs text-slate-300" id="day-config-subtitle">Ngày ...</p>
                 </div>
                 <button type="button" onclick="window.closeModal('day-config-modal')" class="text-white/80 hover:text-white p-1">
@@ -460,7 +521,7 @@
                 </div>
 
                 <div class="space-y-3 pt-2 border-t border-slate-100">
-                    <p class="text-xs font-semibold text-slate-700">Định mức quân số yêu cầu trong ngày:</p>
+                    <p class="text-xs font-semibold text-slate-700">Định mức quân số dự báo yêu cầu trong ngày:</p>
                     <div class="bg-sky-50/70 p-3 rounded-xl border border-sky-100">
                         <div class="text-xs font-bold text-sky-900 mb-2"><i class="fa-solid fa-water text-sky-600 mr-1"></i>Tổ Dự báo Thủy văn</div>
                         <div class="grid grid-cols-2 gap-3">
@@ -496,13 +557,13 @@
         </div>
     </div>
 
-    <!-- 3. Modal Quản lý Nhân sự (Thêm / Sửa / Xóa) -->
+    <!-- 3. Modal Quản lý Nhân sự Toàn Đài (4 Tổ: Dự báo TV, Dự báo KT, Kiểm soát TV, Kiểm soát KT) -->
     <div id="staff-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
             <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-users-gear text-sky-400"></i>
-                    <h3 class="font-bold text-base">Quản Lý Danh Sách Cán Bộ Dự Báo</h3>
+                    <h3 class="font-bold text-base">Quản Lý Danh Sách CBVC (Các Tổ Chuyên Môn & Kiểm Soát)</h3>
                 </div>
                 <button type="button" onclick="window.closeModal('staff-modal')" class="text-white/80 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -517,6 +578,8 @@
                         <select id="new-staff-team" class="rounded-xl border-slate-300 border px-3 py-2 text-sm bg-white font-medium outline-none">
                             <option value="hydro">Tổ Dự báo Thủy văn</option>
                             <option value="meteo">Tổ Dự báo Khí tượng</option>
+                            <option value="ks_hydro">Tổ Kiểm soát Thủy văn</option>
+                            <option value="ks_meteo">Tổ Kiểm soát Khí tượng</option>
                         </select>
                         <button type="button" onclick="window.addStaffMember()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-plus"></i> Thêm
@@ -524,11 +587,11 @@
                     </div>
                 </div>
 
-                <!-- Danh sách 2 tổ -->
+                <!-- Danh sách 4 tổ -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="border border-sky-200 rounded-xl overflow-hidden">
                         <div class="bg-sky-50 px-3.5 py-2 border-b border-sky-200 font-bold text-sky-900 text-xs flex justify-between items-center">
-                            <span>TỔ DỰ BÁO THỦY VĂN</span>
+                            <span>1. TỔ DỰ BÁO THỦY VĂN</span>
                             <span id="modal-hydro-count" class="bg-sky-200 text-sky-800 px-2 py-0.5 rounded-full">0</span>
                         </div>
                         <ul id="modal-hydro-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
@@ -536,16 +599,61 @@
 
                     <div class="border border-indigo-200 rounded-xl overflow-hidden">
                         <div class="bg-indigo-50 px-3.5 py-2 border-b border-indigo-200 font-bold text-indigo-900 text-xs flex justify-between items-center">
-                            <span>TỔ DỰ BÁO KHÍ TƯỢNG</span>
+                            <span>2. TỔ DỰ BÁO KHÍ TƯỢNG</span>
                             <span id="modal-meteo-count" class="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">0</span>
                         </div>
                         <ul id="modal-meteo-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
                     </div>
+
+                    <div class="border border-teal-200 rounded-xl overflow-hidden">
+                        <div class="bg-teal-50 px-3.5 py-2 border-b border-teal-200 font-bold text-teal-900 text-xs flex justify-between items-center">
+                            <span>3. TỔ KIỂM SOÁT THỦY VĂN</span>
+                            <span id="modal-ks-hydro-count" class="bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <ul id="modal-ks-hydro-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
+                    </div>
+
+                    <div class="border border-cyan-200 rounded-xl overflow-hidden">
+                        <div class="bg-cyan-50 px-3.5 py-2 border-b border-cyan-200 font-bold text-cyan-900 text-xs flex justify-between items-center">
+                            <span>4. TỔ KIỂM SOÁT KHÍ TƯỢNG</span>
+                            <span id="modal-ks-meteo-count" class="bg-cyan-200 text-cyan-800 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <ul id="modal-ks-meteo-list" class="divide-y divide-slate-100 p-2 space-y-1"></ul>
+                    </div>
                 </div>
             </div>
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-                <button type="button" onclick="window.resetDefaultStaff()" class="text-xs text-slate-500 hover:text-rose-600 underline">Khôi phục danh sách mặc định</button>
+                <button type="button" onclick="window.resetDefaultStaff()" class="text-xs text-slate-500 hover:text-rose-600 underline">Khôi phục danh sách 18 CBVC mặc định</button>
                 <button type="button" onclick="window.closeModal('staff-modal')" class="px-5 py-2 rounded-xl text-sm font-semibold bg-slate-800 text-white hover:bg-slate-700 transition">Hoàn tất</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3B. Modal Chọn 18 CBVC Tham Gia Trực Bảo Vệ (Dành cho Tổ trưởng Công đoàn & Admin) -->
+    <div id="guard-members-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[88vh]">
+            <div class="px-5 py-3.5 bg-teal-800 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-user-check text-teal-300"></i>
+                    <div>
+                        <h3 class="font-bold text-base">Danh Sách CBVC Trực Bảo Vệ Cơ Quan (T12–T4)</h3>
+                        <p class="text-[11px] text-teal-200">Đánh dấu chọn các CBVC có nghĩa vụ trực đêm (19h00–07h00)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.closeModal('guard-members-modal')" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between bg-teal-50 border border-teal-200 px-3.5 py-2.5 rounded-xl text-xs">
+                    <span class="text-teal-900 font-semibold">Số lượng CBVC đang tham gia trực bảo vệ:</span>
+                    <span id="guard-modal-selected-badge" class="px-2.5 py-0.5 rounded-full bg-teal-700 text-white font-bold">18 người</span>
+                </div>
+                <div id="guard-members-checklist" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                <button type="button" onclick="window.selectAllGuardMembers()" class="text-xs font-semibold text-teal-700 hover:underline">Chọn tất cả CBVC</button>
+                <button type="button" onclick="window.closeModal('guard-members-modal')" class="px-5 py-2 rounded-xl text-sm font-semibold bg-teal-700 hover:bg-teal-600 text-white transition">Xong</button>
             </div>
         </div>
     </div>
@@ -556,14 +664,14 @@
             <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-sliders text-sky-400"></i>
-                    <h3 class="font-bold text-base">Định Mức Quân Số Trực Tiêu Chuẩn</h3>
+                    <h3 class="font-bold text-base">Định Mức Quân Số Trực Dự Báo Tiêu Chuẩn</h3>
                 </div>
                 <button type="button" onclick="window.closeModal('presets-modal')" class="text-white/80 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
             <div class="p-5 space-y-4 text-sm">
-                <p class="text-xs text-slate-500">Thiết lập định mức số người trực mặc định cho chế độ <strong>Bình thường</strong> và <strong>Bão / Lũ tăng cường</strong>.</p>
+                <p class="text-xs text-slate-500">Thiết lập định mức số người trực dự báo mặc định cho chế độ <strong>Bình thường</strong> và <strong>Bão / Lũ tăng cường</strong>.</p>
                 
                 <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-2.5">
                     <div class="font-bold text-slate-800 flex items-center gap-1.5">
@@ -571,14 +679,14 @@
                     </div>
                     <div class="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                            <span class="font-semibold text-sky-800 block mb-1">Tổ Thủy văn:</span>
+                            <span class="font-semibold text-sky-800 block mb-1">Tổ Dự báo Thủy văn:</span>
                             <div class="flex items-center gap-2">
                                 <span>Ngày:</span><input type="number" id="preset-norm-hd" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                                 <span>Đêm:</span><input type="number" id="preset-norm-hn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                             </div>
                         </div>
                         <div>
-                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Khí tượng:</span>
+                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Dự báo Khí tượng:</span>
                             <div class="flex items-center gap-2">
                                 <span>Ngày:</span><input type="number" id="preset-norm-md" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                                 <span>Đêm:</span><input type="number" id="preset-norm-mn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
@@ -593,14 +701,14 @@
                     </div>
                     <div class="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                            <span class="font-semibold text-sky-800 block mb-1">Tổ Thủy văn:</span>
+                            <span class="font-semibold text-sky-800 block mb-1">Tổ Dự báo Thủy văn:</span>
                             <div class="flex items-center gap-2">
                                 <span>Ngày:</span><input type="number" id="preset-sev-hd" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                                 <span>Đêm:</span><input type="number" id="preset-sev-hn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                             </div>
                         </div>
                         <div>
-                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Khí tượng:</span>
+                            <span class="font-semibold text-indigo-800 block mb-1">Tổ Dự báo Khí tượng:</span>
                             <div class="flex items-center gap-2">
                                 <span>Ngày:</span><input type="number" id="preset-sev-md" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
                                 <span>Đêm:</span><input type="number" id="preset-sev-mn" min="0" max="10" class="w-14 border rounded px-2 py-1 text-center font-bold bg-white">
@@ -633,9 +741,9 @@
         </div>
     </div>
 
-    <!-- 6. Modal Mở khóa Quyền Trưởng ca (Phân quyền độc lập 3 vai trò) -->
+    <!-- 6. Modal Mở khóa Phân quyền (4 Vai trò: Thủy văn, Khí tượng, Công đoàn, Quản trị) -->
     <div id="unlock-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
             <div class="px-5 py-4 bg-gradient-to-r from-sky-900 to-indigo-900 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300">
@@ -643,7 +751,7 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-sm">Xác Thực Phân Quyền Trực</h3>
-                        <p class="text-[11px] text-sky-200">Mở khóa đúng tổ chuyên môn hoặc Quản trị</p>
+                        <p class="text-[11px] text-sky-200">Mở khóa đúng tổ chuyên môn, Công đoàn hoặc Quản trị</p>
                     </div>
                 </div>
                 <button type="button" onclick="window.closeModal('unlock-modal')" class="text-white/80 hover:text-white p-1">
@@ -654,7 +762,7 @@
                 <div>
                     <label for="unlock-password-input" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nhập mật khẩu phân quyền</label>
                     <div class="relative">
-                        <input type="password" id="unlock-password-input" autocomplete="off" placeholder="Nhập mật khẩu tổ hoặc quản trị..."
+                        <input type="password" id="unlock-password-input" autocomplete="off" placeholder="Nhập mật khẩu vai trò..."
                             class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none">
                         <button type="button" onclick="window.togglePasswordVisibility('unlock-password-input', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                             <i class="fa-solid fa-eye text-xs"></i>
@@ -669,12 +777,13 @@
                 <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 space-y-1.5">
                     <div class="font-semibold flex items-center gap-1.5">
                         <i class="fa-solid fa-shield-halved text-sky-600"></i>
-                        <span>Mật khẩu mặc định theo 3 vai trò:</span>
+                        <span>Mật khẩu mặc định theo 4 vai trò:</span>
                     </div>
                     <ul class="text-[11px] text-sky-800 space-y-1 pl-1">
-                        <li>• <strong>Trưởng ca Thủy văn:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">tv2026</code> (chỉ sửa Tổ Thủy văn)</li>
-                        <li>• <strong>Trưởng ca Khí tượng:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kt2026</code> (chỉ sửa Tổ Khí tượng)</li>
-                        <li>• <strong>Quản trị Tổng hợp:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kttv2026</code> (sửa toàn bộ 2 tổ)</li>
+                        <li>• <strong>Trưởng ca Thủy văn:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">tv2026</code> (chỉ sửa Dự báo Thủy văn)</li>
+                        <li>• <strong>Trưởng ca Khí tượng:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kt2026</code> (chỉ sửa Dự báo Khí tượng)</li>
+                        <li>• <strong>Tổ trưởng Công đoàn:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-teal-300 font-bold text-teal-900 select-all">cd2026</code> (chỉ sửa Trực Bảo vệ T12–T4)</li>
+                        <li>• <strong>Quản trị Tổng hợp:</strong> <code class="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-bold text-sky-950 select-all">kttv2026</code> (toàn quyền tất cả các mục)</li>
                     </ul>
                 </div>
 
@@ -710,6 +819,7 @@
                     <select id="cp-target-role" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold bg-slate-50 outline-none focus:border-sky-500">
                         <option value="hydro">Trưởng ca Thủy văn</option>
                         <option value="meteo">Trưởng ca Khí tượng</option>
+                        <option value="union">Tổ trưởng Công đoàn</option>
                         <option value="admin">Quản trị Tổng hợp</option>
                     </select>
                 </div>
@@ -735,7 +845,7 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- JAVASCRIPT HOÀN CHỈNH: PHÂN QUYỀN ĐỘC LẬP 2 TỔ + ĐỒNG BỘ FIREBASE     -->
+    <!-- JAVASCRIPT: BẢO TOÀN DỮ LIỆU CŨ + TÍCH HỢP TRỰC BẢO VỆ (18 CBVC)      -->
     <!-- ===================================================================== -->
     <script>
         (function() {
@@ -747,11 +857,11 @@
             const DEFAULT_PASSWORDS = {
                 hydro: 'tv2026',    // Trưởng ca Thủy văn
                 meteo: 'kt2026',    // Trưởng ca Khí tượng
+                union: 'cd2026',    // Tổ trưởng Công đoàn (Trực Bảo vệ T12–T4)
                 admin: 'kttv2026'   // Quản trị Tổng hợp
             };
-            const AUTO_LOCK_DURATION_SEC = 15 * 60; // Tự động khóa sau 15 phút không thao tác
+            const AUTO_LOCK_DURATION_SEC = 15 * 60;
 
-            // Cấu hình Firebase Realtime Database (Dự án: Lich truc KTTV TH)
             const FIREBASE_CONFIG = {
                 apiKey: "AIzaSyCTYKV8uo_5oVa1FxQ3NCkRFmwxDUGuars",
                 authDomain: "lich-truc-kttv-th.firebaseapp.com",
@@ -801,23 +911,59 @@
                 console.error('Lỗi khởi tạo Firebase:', e);
             }
 
-            // Danh sách nhân sự chuẩn
+            // Danh sách 18 CBVC đầy đủ (10 Dự báo viên cũ + 8 Cán bộ Kiểm soát mới)
             const DEFAULT_STAFF = [
-                // Tổ Dự báo Thủy văn (4 người)
-                { id: 'h1', name: 'Nguyễn Thị Thủy', team: 'hydro' },
-                { id: 'h2', name: 'Nguyễn Thị Hoa', team: 'hydro' },
-                { id: 'h3', name: 'Nguyễn Danh Lam', team: 'hydro' },
-                { id: 'h4', name: 'Lê Văn Thắng', team: 'hydro' },
-                // Tổ Dự báo Khí tượng (6 người)
-                { id: 'm1', name: 'Đỗ Thị Thi', team: 'meteo' },
-                { id: 'm2', name: 'Đỗ Thị Huyền', team: 'meteo' },
-                { id: 'm3', name: 'Lữ Thị Thu Trang', team: 'meteo' },
-                { id: 'm4', name: 'Bùi Xuân Tuyên', team: 'meteo' },
-                { id: 'm5', name: 'Nguyễn Việt Anh', team: 'meteo' },
-                { id: 'm6', name: 'Thiều Tú Anh', team: 'meteo' }
+                // 1. Tổ Dự báo Thủy văn (4 người)
+                { id: 'h1', name: 'Nguyễn Thị Thủy', team: 'hydro', guardEligible: true },
+                { id: 'h2', name: 'Nguyễn Thị Hoa', team: 'hydro', guardEligible: true },
+                { id: 'h3', name: 'Nguyễn Danh Lam', team: 'hydro', guardEligible: true },
+                { id: 'h4', name: 'Lê Văn Thắng', team: 'hydro', guardEligible: true },
+                // 2. Tổ Dự báo Khí tượng (6 người)
+                { id: 'm1', name: 'Đỗ Thị Thi', team: 'meteo', guardEligible: true },
+                { id: 'm2', name: 'Đỗ Thị Huyền', team: 'meteo', guardEligible: true },
+                { id: 'm3', name: 'Lữ Thị Thu Trang', team: 'meteo', guardEligible: true },
+                { id: 'm4', name: 'Bùi Xuân Tuyên', team: 'meteo', guardEligible: true },
+                { id: 'm5', name: 'Nguyễn Việt Anh', team: 'meteo', guardEligible: true },
+                { id: 'm6', name: 'Thiều Tú Anh', team: 'meteo', guardEligible: true },
+                // 3. Tổ Kiểm soát Thủy văn (5 người)
+                { id: 'ksh1', name: 'Trịnh Thị Thủy', team: 'ks_hydro', guardEligible: true },
+                { id: 'ksh2', name: 'Trần Thị Diện', team: 'ks_hydro', guardEligible: true },
+                { id: 'ksh3', name: 'Lê Tất Thành', team: 'ks_hydro', guardEligible: true },
+                { id: 'ksh4', name: 'Nguyễn Quang Hoài', team: 'ks_hydro', guardEligible: true },
+                { id: 'ksh5', name: 'Nguyễn Tú Anh', team: 'ks_hydro', guardEligible: true },
+                // 4. Tổ Kiểm soát Khí tượng (3 người)
+                { id: 'ksm1', name: 'Trịnh Hùng Dũng', team: 'ks_meteo', guardEligible: true },
+                { id: 'ksm2', name: 'Lê Văn Xoan', team: 'ks_meteo', guardEligible: true },
+                { id: 'ksm3', name: 'Nguyễn Thị Thu Hạnh', team: 'ks_meteo', guardEligible: true }
             ];
 
-            // Định mức mặc định
+            const CONTROL_STAFF_ADDITIONS = DEFAULT_STAFF.filter(s => s.team === 'ks_hydro' || s.team === 'ks_meteo');
+
+            // Hàm di trú an toàn: giữ nguyên 100% nhân sự và lịch trực đang có trên Firebase/LocalStorage,
+            // chỉ bổ sung 8 cán bộ Kiểm soát nếu chưa tồn tại và gán mặc định guardEligible = true
+            function migrateStaffList(existingStaff) {
+                let list = Array.isArray(existingStaff) ? existingStaff.map(item => ({
+                    ...item,
+                    guardEligible: item.guardEligible !== false
+                })) : [];
+
+                if (list.length === 0) {
+                    return JSON.parse(JSON.stringify(DEFAULT_STAFF));
+                }
+
+                let changed = false;
+                CONTROL_STAFF_ADDITIONS.forEach(ctrl => {
+                    const existsById = list.some(x => x.id === ctrl.id);
+                    const existsByNameAndTeam = list.some(x => x.team === ctrl.team && x.name.trim().toLowerCase() === ctrl.name.trim().toLowerCase());
+                    if (!existsById && !existsByNameAndTeam) {
+                        list.push({ ...ctrl });
+                        changed = true;
+                    }
+                });
+
+                return list;
+            }
+
             const DEFAULT_PRESETS = {
                 normal: { hydroDay: 1, hydroNight: 1, meteoDay: 2, meteoNight: 2 },
                 severe: { hydroDay: 2, hydroNight: 2, meteoDay: 3, meteoNight: 3 }
@@ -826,11 +972,12 @@
             let appState = {
                 staff: [],
                 presets: JSON.parse(JSON.stringify(DEFAULT_PRESETS)),
-                activeTab: 'matrix', // 'matrix' | 'report'
+                activeTab: 'matrix', // 'matrix' | 'report' | 'guard'
                 startDate: '',
                 endDate: '',
                 schedule: {},
-                activeRole: null, // null | 'hydro' | 'meteo' | 'admin'
+                guardSchedule: {}, // { 'YYYY-MM-DD': 'staffId' }
+                activeRole: null,  // null | 'hydro' | 'meteo' | 'union' | 'admin'
                 rolePasswords: { ...DEFAULT_PASSWORDS }
             };
 
@@ -842,11 +989,12 @@
             let autoLockIntervalId = null;
 
             // ==========================================
-            // 1. LƯU TRỮ & PHÂN QUYỀN ĐỘC LẬP 3 VAI TRÒ
+            // 1. LƯU TRỮ & PHÂN QUYỀN ĐỘC LẬP 4 VAI TRÒ
             // ==========================================
             function getRoleDisplayName(role) {
                 if (role === 'hydro') return 'Trưởng ca Thủy văn';
                 if (role === 'meteo') return 'Trưởng ca Khí tượng';
+                if (role === 'union') return 'Tổ trưởng Công đoàn';
                 if (role === 'admin') return 'Quản trị Tổng hợp';
                 return 'Chế độ Xem';
             }
@@ -855,6 +1003,10 @@
                 if (!appState.activeRole) return false;
                 if (appState.activeRole === 'admin') return true;
                 return appState.activeRole === team;
+            }
+
+            function canEditGuard() {
+                return appState.activeRole === 'union' || appState.activeRole === 'admin';
             }
 
             function canEditGlobalSettings() {
@@ -887,7 +1039,32 @@
                 return clean;
             }
 
-            // Ghi toàn bộ cây dữ liệu (dùng cho Admin, đổi ngày, khởi tạo)
+            function normalizeGuardSchedule(rawGuard) {
+                if (!rawGuard || typeof rawGuard !== 'object') return {};
+                const clean = {};
+                Object.keys(rawGuard).forEach(dateKey => {
+                    const val = rawGuard[dateKey];
+                    if (typeof val === 'string' && val.trim() !== '') {
+                        clean[dateKey] = val.trim();
+                    }
+                });
+                return clean;
+            }
+
+            function saveLocalSnapshot() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        staff: appState.staff,
+                        presets: appState.presets,
+                        startDate: appState.startDate,
+                        endDate: appState.endDate,
+                        schedule: appState.schedule,
+                        guardSchedule: appState.guardSchedule,
+                        updatedAt: Date.now()
+                    }));
+                } catch (err) {}
+            }
+
             function saveFullStateToStorage() {
                 const payload = {
                     staff: appState.staff,
@@ -895,11 +1072,10 @@
                     startDate: appState.startDate,
                     endDate: appState.endDate,
                     schedule: appState.schedule,
+                    guardSchedule: appState.guardSchedule,
                     updatedAt: Date.now()
                 };
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-                } catch (err) {}
+                saveLocalSnapshot();
 
                 if (rosterDbRef && !isApplyingRemoteUpdate) {
                     updateSyncBadge('saving', 'Đang đồng bộ...');
@@ -912,19 +1088,10 @@
                 }
             }
 
-            // Ghi cục bộ theo đúng nhánh tổ trên Firebase (tránh ghi đè chéo khi 2 trưởng ca chấm đồng thời)
+            // Ghi cục bộ theo đúng nhánh tổ dự báo (không ghi đè chéo lịch tổ khác hay lịch Công đoàn)
             function saveTeamShiftsToStorage(team, targetDates = null) {
                 const datesToSync = targetDates || getActiveDateList();
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                        staff: appState.staff,
-                        presets: appState.presets,
-                        startDate: appState.startDate,
-                        endDate: appState.endDate,
-                        schedule: appState.schedule,
-                        updatedAt: Date.now()
-                    }));
-                } catch (err) {}
+                saveLocalSnapshot();
 
                 if (rosterDbRef && !isApplyingRemoteUpdate) {
                     const updates = { updatedAt: Date.now() };
@@ -948,10 +1115,35 @@
                 }
             }
 
+            // Ghi cục bộ riêng nhánh trực bảo vệ cơ quan (không đụng vào lịch dự báo KTTV)
+            function saveGuardScheduleToStorage(targetDates = null, includeStaff = false) {
+                const datesToSync = targetDates || getActiveDateList();
+                saveLocalSnapshot();
+
+                if (rosterDbRef && !isApplyingRemoteUpdate) {
+                    const updates = { updatedAt: Date.now() };
+                    if (includeStaff) {
+                        updates['staff'] = appState.staff;
+                    }
+                    datesToSync.forEach(dateStr => {
+                        updates[`guardSchedule/${dateStr}`] = appState.guardSchedule[dateStr] || null;
+                    });
+
+                    updateSyncBadge('saving', 'Đang đồng bộ...');
+                    rosterDbRef.update(updates)
+                        .then(() => updateSyncBadge('connected', 'Đã đồng bộ đám mây'))
+                        .catch((err) => {
+                            console.error('Firebase guard update error:', err);
+                            updateSyncBadge('error', 'Lỗi ghi đám mây');
+                        });
+                }
+            }
+
             function savePasswordsToStorage(newRolesObj) {
                 appState.rolePasswords = {
                     hydro: newRolesObj.hydro || DEFAULT_PASSWORDS.hydro,
                     meteo: newRolesObj.meteo || DEFAULT_PASSWORDS.meteo,
+                    union: newRolesObj.union || DEFAULT_PASSWORDS.union,
                     admin: newRolesObj.admin || DEFAULT_PASSWORDS.admin
                 };
                 try {
@@ -974,6 +1166,7 @@
                         appState.rolePasswords = {
                             hydro: (parsed.hydro && parsed.hydro.length >= 4) ? parsed.hydro : DEFAULT_PASSWORDS.hydro,
                             meteo: (parsed.meteo && parsed.meteo.length >= 4) ? parsed.meteo : DEFAULT_PASSWORDS.meteo,
+                            union: (parsed.union && parsed.union.length >= 4) ? parsed.union : DEFAULT_PASSWORDS.union,
                             admin: (parsed.admin && parsed.admin.length >= 4) ? parsed.admin : DEFAULT_PASSWORDS.admin
                         };
                         return;
@@ -995,6 +1188,19 @@
                 if (!canEditTeam(team)) {
                     const targetLabel = team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
                     showToast(`Bạn đang mở quyền ${getRoleDisplayName(appState.activeRole)}, không thể chỉnh sửa ${targetLabel}!`, 'warning');
+                    return false;
+                }
+                resetAutoLockTimer();
+                return true;
+            }
+
+            function requireGuardPermission() {
+                if (!appState.activeRole) {
+                    showToast("Đang ở chế độ Xem. Vui lòng mở khóa bằng mật khẩu Tổ trưởng Công đoàn (cd2026).", 'warning');
+                    return false;
+                }
+                if (!canEditGuard()) {
+                    showToast(`Bạn đang mở quyền ${getRoleDisplayName(appState.activeRole)}. Chỉ Tổ trưởng Công đoàn (cd2026) hoặc Quản trị mới được phân trực bảo vệ!`, 'warning');
                     return false;
                 }
                 resetAutoLockTimer();
@@ -1064,8 +1270,19 @@
                 const btnPresets = document.getElementById('btn-manage-presets');
                 const btnAutoLabel = document.getElementById('btn-auto-assign-label');
                 const btnClearLabel = document.getElementById('btn-clear-schedule-label');
+                const btnGuardMembers = document.getElementById('btn-guard-members');
 
                 const role = appState.activeRole;
+                const isGuardTab = appState.activeTab === 'guard';
+
+                if (isGuardTab) {
+                    bulkWeatherControls.classList.add('hidden');
+                    btnGuardMembers.classList.remove('hidden');
+                } else {
+                    bulkWeatherControls.classList.remove('hidden');
+                    btnGuardMembers.classList.add('hidden');
+                }
+
                 if (role) {
                     lockedBar.classList.add('hidden');
                     unlockedBar.classList.remove('hidden');
@@ -1077,25 +1294,33 @@
 
                     if (role === 'hydro') {
                         unlockedBar.className = 'flex items-center gap-1.5 bg-sky-500/30 border border-sky-300/50 px-2.5 py-1.5 rounded-xl';
-                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Thủy văn (Tổ Khí tượng bị khóa chống nhầm)';
-                        btnAutoLabel.textContent = 'Phân ca tự động (Thủy văn)';
-                        btnClearLabel.textContent = 'Xóa lịch Thủy văn';
+                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Thủy văn (Tổ Khí tượng & Công đoàn bị khóa)';
+                        btnAutoLabel.textContent = isGuardTab ? 'Phân ca tự động' : 'Phân ca tự động (Thủy văn)';
+                        btnClearLabel.textContent = isGuardTab ? 'Xóa trắng lịch' : 'Xóa lịch Thủy văn';
                         bulkWeatherControls.classList.add('opacity-50');
                         btnStaff.classList.add('opacity-60');
                         btnPresets.classList.add('opacity-60');
                     } else if (role === 'meteo') {
                         unlockedBar.className = 'flex items-center gap-1.5 bg-indigo-500/35 border border-indigo-300/50 px-2.5 py-1.5 rounded-xl';
-                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Khí tượng (Tổ Thủy văn bị khóa chống nhầm)';
-                        btnAutoLabel.textContent = 'Phân ca tự động (Khí tượng)';
-                        btnClearLabel.textContent = 'Xóa lịch Khí tượng';
+                        unlockedHintText.textContent = 'Đang mở khóa riêng Tổ Khí tượng (Tổ Thủy văn & Công đoàn bị khóa)';
+                        btnAutoLabel.textContent = isGuardTab ? 'Phân ca tự động' : 'Phân ca tự động (Khí tượng)';
+                        btnClearLabel.textContent = isGuardTab ? 'Xóa trắng lịch' : 'Xóa lịch Khí tượng';
+                        bulkWeatherControls.classList.add('opacity-50');
+                        btnStaff.classList.add('opacity-60');
+                        btnPresets.classList.add('opacity-60');
+                    } else if (role === 'union') {
+                        unlockedBar.className = 'flex items-center gap-1.5 bg-teal-500/35 border border-teal-300/50 px-2.5 py-1.5 rounded-xl';
+                        unlockedHintText.textContent = 'Đang mở khóa Tổ trưởng Công đoàn (Chỉ chỉnh sửa Tab 3: Trực Bảo vệ)';
+                        btnAutoLabel.textContent = isGuardTab ? 'Chia đều tự động (18 CBVC)' : 'Phân ca tự động';
+                        btnClearLabel.textContent = isGuardTab ? 'Xóa lịch Bảo vệ' : 'Xóa trắng lịch';
                         bulkWeatherControls.classList.add('opacity-50');
                         btnStaff.classList.add('opacity-60');
                         btnPresets.classList.add('opacity-60');
                     } else {
                         unlockedBar.className = 'flex items-center gap-1.5 bg-emerald-500/25 border border-emerald-300/40 px-2.5 py-1.5 rounded-xl';
-                        unlockedHintText.textContent = 'Quyền Quản trị: Click ô ngày để xoay vòng ca trực cả 2 tổ';
-                        btnAutoLabel.textContent = 'Phân ca tự động';
-                        btnClearLabel.textContent = 'Xóa trắng lịch';
+                        unlockedHintText.textContent = 'Quyền Quản trị: Chỉnh sửa toàn bộ Dự báo KTTV & Trực Bảo vệ';
+                        btnAutoLabel.textContent = isGuardTab ? 'Chia đều tự động (18 CBVC)' : 'Phân ca tự động';
+                        btnClearLabel.textContent = isGuardTab ? 'Xóa lịch Bảo vệ' : 'Xóa trắng lịch';
                         bulkWeatherControls.classList.remove('opacity-50');
                         btnStaff.classList.remove('opacity-60');
                         btnPresets.classList.remove('opacity-60');
@@ -1109,8 +1334,8 @@
                     bulkWeatherControls.classList.remove('opacity-50');
                     btnStaff.classList.add('opacity-70');
                     btnPresets.classList.add('opacity-70');
-                    btnAutoLabel.textContent = 'Phân ca tự động';
-                    btnClearLabel.textContent = 'Xóa trắng lịch';
+                    btnAutoLabel.textContent = isGuardTab ? 'Chia đều tự động (18 CBVC)' : 'Phân ca tự động';
+                    btnClearLabel.textContent = isGuardTab ? 'Xóa lịch Bảo vệ' : 'Xóa trắng lịch';
                 }
             }
 
@@ -1149,14 +1374,21 @@
                     matchedRole = 'hydro';
                 } else if (entered === appState.rolePasswords.meteo) {
                     matchedRole = 'meteo';
+                } else if (entered === appState.rolePasswords.union) {
+                    matchedRole = 'union';
                 }
 
                 if (matchedRole) {
                     appState.activeRole = matchedRole;
                     window.closeModal('unlock-modal');
-                    updateAuthUI();
+                    // Nếu Tổ trưởng Công đoàn đăng nhập, tự động chuyển sang Tab Trực Bảo vệ nếu đang ở tab khác
+                    if (matchedRole === 'union' && appState.activeTab !== 'guard') {
+                        window.switchViewTab('guard');
+                    } else {
+                        updateAuthUI();
+                        renderAll();
+                    }
                     startAutoLockCountdown();
-                    renderAll();
                     showToast(`Đã mở khóa: ${getRoleDisplayName(matchedRole)}!`, 'success');
                 } else {
                     errEl.classList.remove('hidden');
@@ -1167,7 +1399,7 @@
             window.lockShiftControl = function(isAuto = false) {
                 appState.activeRole = null;
                 stopAutoLockCountdown();
-                ['shift-modal', 'day-config-modal', 'staff-modal', 'presets-modal', 'change-pass-modal'].forEach(id => window.closeModal(id));
+                ['shift-modal', 'day-config-modal', 'staff-modal', 'guard-members-modal', 'presets-modal', 'change-pass-modal'].forEach(id => window.closeModal(id));
                 updateAuthUI();
                 renderAll();
                 if (isAuto) {
@@ -1188,7 +1420,7 @@
                     targetSelect.value = 'admin';
                 } else {
                     targetSelect.value = appState.activeRole;
-                    targetSelect.disabled = true; // Trưởng ca tổ nào chỉ đổi mật khẩu tổ đó
+                    targetSelect.disabled = true;
                 }
 
                 document.getElementById('cp-old-pass').value = '';
@@ -1226,7 +1458,7 @@
                     return;
                 }
 
-                const otherRoles = ['hydro', 'meteo', 'admin'].filter(r => r !== targetRole);
+                const otherRoles = ['hydro', 'meteo', 'union', 'admin'].filter(r => r !== targetRole);
                 if (otherRoles.some(r => appState.rolePasswords[r] === newP)) {
                     errEl.textContent = 'Mật khẩu mới không được trùng với mật khẩu của vai trò khác!';
                     errEl.classList.remove('hidden');
@@ -1242,11 +1474,11 @@
             window.confirmResetDefaultPassword = function() {
                 window.closeModal('unlock-modal');
                 openConfirmModal(
-                    'Khôi phục 3 mật khẩu mặc định gốc?',
-                    'Mật khẩu sẽ đặt lại về: Thủy văn (tv2026), Khí tượng (kt2026), Quản trị (kttv2026). Bạn có chắc chắn?',
+                    'Khôi phục 4 mật khẩu mặc định gốc?',
+                    'Mật khẩu sẽ đặt lại về: Thủy văn (tv2026), Khí tượng (kt2026), Công đoàn (cd2026), Quản trị (kttv2026). Bạn có chắc chắn?',
                     function() {
                         savePasswordsToStorage({ ...DEFAULT_PASSWORDS });
-                        showToast('Đã khôi phục 3 mật khẩu mặc định: tv2026 / kt2026 / kttv2026', 'success');
+                        showToast('Đã khôi phục 4 mật khẩu mặc định: tv2026 / kt2026 / cd2026 / kttv2026', 'success');
                     }
                 );
             };
@@ -1256,11 +1488,7 @@
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
                         const parsed = JSON.parse(raw);
-                        if (Array.isArray(parsed.staff) && parsed.staff.length > 0) {
-                            appState.staff = parsed.staff;
-                        } else {
-                            appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
-                        }
+                        appState.staff = migrateStaffList(parsed.staff);
                         if (parsed.presets && parsed.presets.normal && parsed.presets.severe) {
                             appState.presets = parsed.presets;
                         }
@@ -1270,6 +1498,9 @@
                         }
                         if (parsed.schedule && typeof parsed.schedule === 'object') {
                             appState.schedule = parsed.schedule;
+                        }
+                        if (parsed.guardSchedule && typeof parsed.guardSchedule === 'object') {
+                            appState.guardSchedule = normalizeGuardSchedule(parsed.guardSchedule);
                         }
                         return;
                     }
@@ -1388,10 +1619,26 @@
 
             function escapeHTML(str) {
                 return String(str)
-                    .replace(/&/g, '&')
-                    .replace(/</g, '<')
-                    .replace(/>/g, '>')
-                    .replace(/"/g, '"');
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function getTeamShortLabel(team) {
+                if (team === 'hydro') return 'Dự báo TV';
+                if (team === 'meteo') return 'Dự báo KT';
+                if (team === 'ks_hydro') return 'Kiểm soát TV';
+                if (team === 'ks_meteo') return 'Kiểm soát KT';
+                return '';
+            }
+
+            function getTeamFullLabel(team) {
+                if (team === 'hydro') return 'Tổ Dự báo Thủy văn';
+                if (team === 'meteo') return 'Tổ Dự báo Khí tượng';
+                if (team === 'ks_hydro') return 'Tổ Kiểm soát Thủy văn';
+                if (team === 'ks_meteo') return 'Tổ Kiểm soát Khí tượng';
+                return 'Khác';
             }
 
             // ==========================================
@@ -1466,34 +1713,51 @@
                 appState.activeTab = tab;
                 const btnMatrix = document.getElementById('tab-btn-matrix');
                 const btnReport = document.getElementById('tab-btn-report');
+                const btnGuard = document.getElementById('tab-btn-guard');
                 const viewMatrix = document.getElementById('view-matrix-container');
                 const viewReport = document.getElementById('view-report-container');
+                const viewGuard = document.getElementById('view-guard-container');
                 const guideMatrix = document.getElementById('matrix-guide-bar');
                 const guideReport = document.getElementById('report-guide-bar');
+                const guideGuard = document.getElementById('guard-guide-bar');
                 const printLabel = document.getElementById('btn-print-label');
 
+                const inactiveClass = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2';
+                btnMatrix.className = inactiveClass;
+                btnReport.className = inactiveClass;
+                btnGuard.className = inactiveClass;
+
+                viewMatrix.classList.add('hidden');
+                viewReport.classList.add('hidden');
+                viewGuard.classList.add('hidden');
+
+                guideMatrix.classList.add('hidden');
+                guideReport.classList.add('hidden');
+                guideGuard.classList.add('hidden');
+
                 if (tab === 'matrix') {
-                    btnMatrix.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2';
-                    btnReport.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2';
+                    btnMatrix.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-sky-800 shadow-sm transition flex items-center gap-2';
                     viewMatrix.classList.remove('hidden');
-                    viewReport.classList.add('hidden');
                     guideMatrix.classList.remove('hidden');
-                    guideReport.classList.add('hidden');
                     printLabel.textContent = 'In Bảng Ma Trận';
-                } else {
-                    btnReport.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-800 shadow-sm transition flex items-center gap-2';
-                    btnMatrix.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2';
+                } else if (tab === 'report') {
+                    btnReport.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-800 shadow-sm transition flex items-center gap-2';
                     viewReport.classList.remove('hidden');
-                    viewMatrix.classList.add('hidden');
                     guideReport.classList.remove('hidden');
-                    guideMatrix.classList.add('hidden');
                     printLabel.textContent = 'In Lịch Báo Cáo';
+                } else {
+                    btnGuard.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-teal-800 shadow-sm transition flex items-center gap-2';
+                    viewGuard.classList.remove('hidden');
+                    guideGuard.classList.remove('hidden');
+                    printLabel.textContent = 'In Lịch Trực Bảo Vệ';
                 }
-                updatePrintHeader();
+
+                updateAuthUI();
+                renderAll();
             };
 
             // ==========================================
-            // 4. PHÁT HIỆN XUNG ĐỘT & PHÂN CA TỰ ĐỘNG THEO TỔ
+            // 4. PHÁT HIỆN XUNG ĐỘT & PHÂN CA TỰ ĐỘNG
             // ==========================================
             function detectConflicts(dates) {
                 const warnings = {};
@@ -1538,6 +1802,71 @@
                 return { warnings, totalConflicts };
             }
 
+            // Phân ca tự động cho Trực Bảo vệ cơ quan (chia đều 18 CBVC, mỗi đêm 1 người 19h–07h)
+            function autoAssignGuardSchedule(dates) {
+                if (!requireGuardPermission()) return;
+                const eligibleMembers = appState.staff.filter(s => s.guardEligible !== false);
+                if (eligibleMembers.length === 0) {
+                    showToast('Chưa có CBVC nào được chọn trong danh sách trực bảo vệ!', 'warning');
+                    return;
+                }
+
+                // Tính lũy kế số đêm đã trực ngoài khoảng ngày đang xếp để chia đều xuyên suốt mùa T12–T4
+                const dateSet = new Set(dates);
+                const stats = {};
+                eligibleMembers.forEach(m => {
+                    stats[m.id] = { total: 0, weekend: 0, lastGuardDate: null };
+                });
+
+                Object.keys(appState.guardSchedule).forEach(dStr => {
+                    if (dateSet.has(dStr)) return;
+                    const sid = appState.guardSchedule[dStr];
+                    if (sid && stats[sid]) {
+                        stats[sid].total++;
+                        if (isWeekend(dStr)) stats[sid].weekend++;
+                    }
+                });
+
+                dates.forEach((dateStr, idx) => {
+                    const prevDateStr = idx > 0 ? dates[idx - 1] : null;
+                    const prevPrevDateStr = idx > 1 ? dates[idx - 2] : null;
+                    const wknd = isWeekend(dateStr);
+                    const dayForecast = appState.schedule[dateStr];
+
+                    const candidates = [...eligibleMembers];
+                    candidates.sort((a, b) => {
+                        const sa = stats[a.id];
+                        const sb = stats[b.id];
+
+                        // Tránh xếp trực 2 đêm liên tiếp hoặc cách 1 đêm
+                        const consecA = (prevDateStr && sa.lastGuardDate === prevDateStr) ? 1000 : ((prevPrevDateStr && sa.lastGuardDate === prevPrevDateStr) ? 200 : 0);
+                        const consecB = (prevDateStr && sb.lastGuardDate === prevDateStr) ? 1000 : ((prevPrevDateStr && sb.lastGuardDate === prevPrevDateStr) ? 200 : 0);
+                        if (consecA !== consecB) return consecA - consecB;
+
+                        // Hạn chế trùng với người đang trực Ca Đêm Dự báo KTTV cùng đêm đó
+                        const overlapForecastA = (dayForecast && (dayForecast.shifts.hydroNight.includes(a.id) || dayForecast.shifts.meteoNight.includes(a.id))) ? 150 : 0;
+                        const overlapForecastB = (dayForecast && (dayForecast.shifts.hydroNight.includes(b.id) || dayForecast.shifts.meteoNight.includes(b.id))) ? 150 : 0;
+                        if (overlapForecastA !== overlapForecastB) return overlapForecastA - overlapForecastB;
+
+                        // Ưu tiên người có tổng đêm trực thấp nhất (chia đều nghĩa vụ 18 CBVC)
+                        if (sa.total !== sb.total) return sa.total - sb.total;
+                        if (wknd && sa.weekend !== sb.weekend) return sa.weekend - sb.weekend;
+
+                        return Math.random() - 0.5;
+                    });
+
+                    const chosen = candidates[0];
+                    appState.guardSchedule[dateStr] = chosen.id;
+                    stats[chosen.id].total++;
+                    if (wknd) stats[chosen.id].weekend++;
+                    stats[chosen.id].lastGuardDate = dateStr;
+                });
+
+                saveGuardScheduleToStorage(dates, false);
+                renderAll();
+                showToast(`Đã chia đều lịch trực đêm bảo vệ (19h–07h) cho ${eligibleMembers.length} CBVC!`, 'success');
+            }
+
             window.autoAssignSchedule = function() {
                 if (!appState.activeRole) {
                     showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
@@ -1547,6 +1876,12 @@
 
                 const dates = getActiveDateList();
                 if (dates.length === 0) return;
+
+                // Nếu đang ở Tab 3 (Trực Bảo vệ) hoặc đang đăng nhập quyền Tổ trưởng Công đoàn
+                if (appState.activeTab === 'guard' || appState.activeRole === 'union') {
+                    autoAssignGuardSchedule(dates);
+                    return;
+                }
 
                 const targetTeams = appState.activeRole === 'admin' ? ['hydro', 'meteo'] : [appState.activeRole];
                 const hydroStaff = appState.staff.filter(s => s.team === 'hydro');
@@ -1626,7 +1961,7 @@
                     ? 'Tổ Dự báo Thủy văn (giữ nguyên Tổ Khí tượng)'
                     : (appState.activeRole === 'meteo'
                         ? 'Tổ Dự báo Khí tượng (giữ nguyên Tổ Thủy văn)'
-                        : 'cả 2 tổ Thủy văn & Khí tượng');
+                        : 'cả 2 tổ Dự báo Thủy văn & Khí tượng');
                 showToast(`Đã phân ca tự động cho ${scopeMsg}!`, 'success');
             };
 
@@ -1638,14 +1973,34 @@
                 resetAutoLockTimer();
 
                 const role = appState.activeRole;
+                const isGuardMode = (appState.activeTab === 'guard' || role === 'union');
+
+                if (isGuardMode) {
+                    if (!requireGuardPermission()) return;
+                    openConfirmModal(
+                        'Xóa trắng lịch Trực Bảo vệ cơ quan?',
+                        'Toàn bộ dấu tích trực đêm bảo vệ (19h–07h) trong khoảng ngày đang chọn sẽ được xóa sạch. Lịch dự báo KTTV được giữ nguyên.',
+                        function() {
+                            const dates = getActiveDateList();
+                            dates.forEach(d => {
+                                delete appState.guardSchedule[d];
+                            });
+                            saveGuardScheduleToStorage(dates, false);
+                            renderAll();
+                            showToast('Đã xóa trắng lịch trực bảo vệ cơ quan.', 'info');
+                        }
+                    );
+                    return;
+                }
+
                 const scopeTitle = role === 'hydro'
-                    ? 'Xóa trắng lịch Tổ Thủy văn?'
-                    : (role === 'meteo' ? 'Xóa trắng lịch Tổ Khí tượng?' : 'Xóa trắng lịch trực toàn kỳ?');
+                    ? 'Xóa trắng lịch Dự báo Thủy văn?'
+                    : (role === 'meteo' ? 'Xóa trắng lịch Dự báo Khí tượng?' : 'Xóa trắng lịch trực dự báo toàn kỳ?');
                 const scopeDesc = role === 'hydro'
                     ? 'Toàn bộ ca Ngày (N) và ca Đêm (Đ) của Tổ Dự báo Thủy văn sẽ được xóa sạch. Lịch Tổ Khí tượng được giữ nguyên.'
                     : (role === 'meteo'
                         ? 'Toàn bộ ca Ngày (N) và ca Đêm (Đ) của Tổ Dự báo Khí tượng sẽ được xóa sạch. Lịch Tổ Thủy văn được giữ nguyên.'
-                        : 'Toàn bộ dấu tích ca Ngày (N) và ca Đêm (Đ) của cả 2 tổ trong khoảng ngày đang chọn sẽ được xóa sạch.');
+                        : 'Toàn bộ dấu tích ca Ngày (N) và ca Đêm (Đ) của cả 2 tổ dự báo trong khoảng ngày đang chọn sẽ được xóa sạch.');
 
                 openConfirmModal(scopeTitle, scopeDesc, function() {
                     const dates = getActiveDateList();
@@ -1668,17 +2023,23 @@
             };
 
             // ==========================================
-            // 5. RENDER GIAO DIỆN (TAB 1 MA TRẬN & TAB 2 BÁO CÁO)
+            // 5. RENDER GIAO DIỆN (3 TAB)
             // ==========================================
             function renderAll() {
                 const badge = document.getElementById('total-staff-badge');
                 if (badge) badge.textContent = appState.staff.length;
+
+                const eligibleCount = appState.staff.filter(s => s.guardEligible !== false).length;
+                const guardBadge = document.getElementById('guard-eligible-count');
+                if (guardBadge) guardBadge.textContent = eligibleCount;
+
                 renderMatrixView();
                 renderReportView();
+                renderGuardView();
                 updatePrintHeader();
             }
 
-            // --- TAB 1: MA TRẬN TÍCH PHÂN CA ---
+            // --- TAB 1: MA TRẬN TÍCH PHÂN CA DỰ BÁO KTTV ---
             function renderMatrixView() {
                 const thead = document.getElementById('matrix-thead');
                 const tbody = document.getElementById('matrix-tbody');
@@ -1687,7 +2048,6 @@
                 const { warnings, totalConflicts } = detectConflicts(dates);
                 const canConfigDay = canEditGlobalSettings();
 
-                // Header ngày
                 let headHtml = '<tr class="bg-slate-100 border-b border-slate-300 text-[11px]">';
                 headHtml += '<th class="sticky-col-left bg-slate-100 py-2 px-3 font-bold text-slate-800 border-r border-slate-300 min-w-[175px] max-w-[195px]">Cán bộ Dự báo</th>';
 
@@ -1726,7 +2086,6 @@
                 </tr>`;
                 thead.innerHTML = headHtml;
 
-                // Body 2 tổ
                 tbody.innerHTML = '';
                 const teams = [
                     { key: 'hydro', title: 'I. TỔ DỰ BÁO THỦY VĂN', bgClass: 'bg-sky-50 text-sky-900', dayKey: 'hydroDay', nightKey: 'hydroNight' },
@@ -1822,7 +2181,6 @@
                     });
                 });
 
-                // Footer kiểm soát quân số ngày/đêm từng tổ
                 let shortageDays = 0;
                 let footHtml = `
                     <tr class="border-b border-slate-200 bg-sky-50/60">
@@ -1881,21 +2239,19 @@
                 footHtml += '<td colspan="4" class="bg-slate-100 text-center text-[10px] text-slate-500 italic">Định mức chuẩn</td></tr>';
                 tfoot.innerHTML = footHtml;
 
-                // Banner cảnh báo tổng hợp
                 const conflictBadge = document.getElementById('conflict-summary-badge');
                 const conflictText = document.getElementById('conflict-count-text');
-                if (totalConflicts > 0 || shortageDays > 0) {
+                if (appState.activeTab !== 'guard' && (totalConflicts > 0 || shortageDays > 0)) {
                     conflictBadge.classList.remove('hidden');
                     const msgs = [];
                     if (totalConflicts > 0) msgs.push(`${totalConflicts} cảnh báo trực liên tiếp`);
                     if (shortageDays > 0) msgs.push(`${shortageDays} lượt tổ/ngày chưa đủ định mức quân số`);
                     conflictText.textContent = msgs.join(' • ');
-                } else {
+                } else if (appState.activeTab !== 'guard') {
                     conflictBadge.classList.add('hidden');
                 }
             }
 
-            // Click xoay vòng trên Ma trận: Trống -> N -> Đ -> NĐ -> Trống
             window.cycleMatrixCell = function(dateStr, team, staffId) {
                 if (!requireTeamPermission(team)) return;
                 const dayData = appState.schedule[dateStr];
@@ -1943,7 +2299,6 @@
                         ? 'bg-amber-50/40 hover:bg-amber-50/80 transition weekend-row'
                         : 'hover:bg-slate-50 transition';
 
-                    // Cột Ngày / Thứ
                     const tdDate = document.createElement('td');
                     tdDate.className = 'py-2 px-3 border-r border-slate-200 text-center whitespace-nowrap';
                     tdDate.innerHTML = `
@@ -1952,7 +2307,6 @@
                     `;
                     tr.appendChild(tdDate);
 
-                    // Cột Trạng thái thời tiết
                     const tdWeather = document.createElement('td');
                     tdWeather.className = 'py-2 px-2 border-r border-slate-200 text-center';
                     const weatherLabel = dayData.weather === 'severe' ? 'Bão / Lũ (Tăng cường)' : (dayData.weather === 'custom' ? 'Tăng cường' : 'Bình thường');
@@ -1975,7 +2329,6 @@
                     `;
                     tr.appendChild(tdWeather);
 
-                    // 4 Cột Ca trực
                     const shiftCols = [
                         { key: 'hydroDay', reqKey: 'hydroDay', team: 'hydro', type: 'day' },
                         { key: 'hydroNight', reqKey: 'hydroNight', team: 'hydro', type: 'night' },
@@ -2038,7 +2391,6 @@
                         tr.appendChild(td);
                     });
 
-                    // Cột Ghi chú
                     const tdNote = document.createElement('td');
                     tdNote.className = 'py-1.5 px-2 align-middle';
                     const noteVal = dayData.note || '';
@@ -2062,6 +2414,208 @@
                 });
             }
 
+            // --- TAB 3: TRỰC BẢO VỆ CƠ QUAN (19H–07H, T12–T4, 18 CBVC) ---
+            function renderGuardView() {
+                const thead = document.getElementById('guard-thead');
+                const tbody = document.getElementById('guard-tbody');
+                const tfoot = document.getElementById('guard-tfoot');
+                const dates = getActiveDateList();
+                const guardEditable = canEditGuard();
+                const isLockedByOtherRole = Boolean(appState.activeRole && !guardEditable);
+
+                // Kiểm tra mùa trực T12 - T4
+                const seasonBadge = document.getElementById('guard-season-badge');
+                const offSeasonBadge = document.getElementById('guard-offseason-badge');
+                if (seasonBadge && offSeasonBadge && dates.length > 0) {
+                    const hasSeasonMonth = dates.some(dStr => {
+                        const m = parseISODate(dStr).getMonth() + 1;
+                        return m === 12 || (m >= 1 && m <= 4);
+                    });
+                    if (hasSeasonMonth) {
+                        seasonBadge.classList.remove('hidden');
+                        offSeasonBadge.classList.add('hidden');
+                    } else {
+                        seasonBadge.classList.add('hidden');
+                        offSeasonBadge.classList.remove('hidden');
+                    }
+                }
+
+                // Header ngày
+                let headHtml = '<tr class="bg-slate-100 border-b border-slate-300 text-[11px]">';
+                headHtml += '<th class="sticky-col-left bg-slate-100 py-2 px-3 font-bold text-slate-800 border-r border-slate-300 min-w-[225px] max-w-[245px]">Họ và tên CBVC / Tổ</th>';
+
+                const shortDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                dates.forEach(dateStr => {
+                    const dObj = parseISODate(dateStr);
+                    const dayNum = String(dObj.getDate()).padStart(2, '0');
+                    const shortDayName = shortDays[dObj.getDay()];
+                    const wknd = isWeekend(dateStr);
+                    const headerBg = wknd ? 'bg-amber-100/80 text-rose-700 weekend-col' : 'bg-slate-100 text-slate-700';
+
+                    headHtml += `
+                        <th title="Đêm ${formatDisplayDate(dateStr)} (19h00 - 07h00)"
+                            class="py-1.5 px-1 text-center border-r border-slate-200 min-w-[34px] ${headerBg}">
+                            <div class="font-bold leading-tight">${dayNum}</div>
+                            <div class="text-[9px] font-medium opacity-80 leading-tight">${shortDayName}</div>
+                        </th>
+                    `;
+                });
+
+                headHtml += `
+                    <th class="py-1.5 px-2 text-center bg-rose-50 text-rose-900 font-bold border-l border-r border-slate-300 min-w-[46px]" title="Số đêm trực T7/CN trong kỳ">T7/CN</th>
+                    <th class="py-1.5 px-2 text-center bg-teal-50 text-teal-900 font-bold border-r border-slate-300 min-w-[48px]" title="Tổng số đêm trực trong kỳ đang xem">Trong kỳ</th>
+                    <th class="sticky-col-right py-1.5 px-2 text-center bg-slate-200 text-slate-900 font-bold min-w-[56px]" title="Tổng lũy kế toàn bộ các ngày đã lưu trong dữ liệu">Lũy kế</th>
+                </tr>`;
+                thead.innerHTML = headHtml;
+
+                // Tính tổng lũy kế toàn bộ các ngày trong guardSchedule
+                const cumulativeMap = {};
+                Object.keys(appState.guardSchedule).forEach(dKey => {
+                    const sid = appState.guardSchedule[dKey];
+                    if (sid) {
+                        cumulativeMap[sid] = (cumulativeMap[sid] || 0) + 1;
+                    }
+                });
+
+                const eligibleMembers = appState.staff.filter(s => s.guardEligible !== false);
+                tbody.innerHTML = '';
+
+                const teamOrder = ['hydro', 'meteo', 'ks_hydro', 'ks_meteo'];
+                eligibleMembers.sort((a, b) => teamOrder.indexOf(a.team) - teamOrder.indexOf(b.team));
+
+                eligibleMembers.forEach((member, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = `transition group ${isLockedByOtherRole ? 'team-locked-row' : 'hover:bg-teal-50/40'}`;
+
+                    let periodWknd = 0;
+                    let periodTotal = 0;
+                    const cumTotal = cumulativeMap[member.id] || 0;
+
+                    const teamBadgeColor = member.team === 'hydro'
+                        ? 'bg-sky-100 text-sky-800'
+                        : (member.team === 'meteo'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : (member.team === 'ks_hydro'
+                                ? 'bg-teal-100 text-teal-800'
+                                : 'bg-cyan-100 text-cyan-800'));
+
+                    let rowHtml = `
+                        <td class="sticky-col-left bg-white ${isLockedByOtherRole ? '' : 'group-hover:bg-teal-50/60'} py-1.5 px-3 border-r border-slate-300 font-medium text-slate-800 whitespace-nowrap">
+                            <div class="flex items-center justify-between gap-2">
+                                <span><span class="text-slate-400 mr-1.5 text-[11px]">${idx + 1}.</span>${escapeHTML(member.name)}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold no-print ${teamBadgeColor}">${getTeamShortLabel(member.team)}</span>
+                            </div>
+                        </td>
+                    `;
+
+                    dates.forEach((dateStr, dIdx) => {
+                        const wknd = isWeekend(dateStr);
+                        const assignedId = appState.guardSchedule[dateStr];
+                        const isAssigned = assignedId === member.id;
+
+                        if (isAssigned) {
+                            periodTotal++;
+                            if (wknd) periodWknd++;
+                        }
+
+                        // Kiểm tra trực 2 đêm liên tiếp hoặc trùng ca đêm dự báo KTTV
+                        const prevDateStr = dIdx > 0 ? dates[dIdx - 1] : null;
+                        const isConsecutiveNight = isAssigned && prevDateStr && appState.guardSchedule[prevDateStr] === member.id;
+                        const dayForecast = appState.schedule[dateStr];
+                        const isOverlapForecastNight = isAssigned && dayForecast && (
+                            dayForecast.shifts.hydroNight.includes(member.id) ||
+                            dayForecast.shifts.meteoNight.includes(member.id)
+                        );
+                        const hasWarning = isConsecutiveNight || isOverlapForecastNight;
+
+                        let badgeHtml = '<span class="text-transparent text-[11px]">-</span>';
+                        if (isAssigned) {
+                            badgeHtml = '<span class="matrix-cell-print inline-block w-full py-0.5 rounded bg-teal-100 text-teal-900 font-bold border border-teal-400 text-[11px]">Đ</span>';
+                        }
+
+                        const cellBg = hasWarning
+                            ? 'ring-2 ring-inset ring-rose-500 bg-rose-50'
+                            : (wknd ? 'bg-amber-50/30 weekend-col' : '');
+                        const cursorClass = guardEditable
+                            ? 'cursor-pointer hover:bg-teal-100/70'
+                            : (isLockedByOtherRole ? 'team-locked-cell' : 'cursor-default');
+
+                        let tip = `${member.name} • Đêm ${formatDisplayDate(dateStr)} (19h–07h)`;
+                        if (isConsecutiveNight) tip = 'Cảnh báo: Trực đêm bảo vệ 2 đêm liên tiếp!';
+                        else if (isOverlapForecastNight) tip = 'Cảnh báo: Trùng với lịch trực Ca Đêm Dự báo KTTV!';
+                        else if (guardEditable) tip += ' (Click để gán / hủy trực đêm này)';
+
+                        rowHtml += `
+                            <td onclick="window.toggleGuardCell('${dateStr}', '${member.id}')"
+                                title="${escapeHTML(tip)}"
+                                class="p-0.5 text-center border-r border-slate-200 transition ${cursorClass} ${cellBg}">
+                                ${badgeHtml}
+                            </td>
+                        `;
+                    });
+
+                    rowHtml += `
+                        <td class="py-1.5 px-1.5 text-center font-semibold ${periodWknd > 0 ? 'text-rose-600' : 'text-slate-400'} border-l border-r border-slate-200">${periodWknd}</td>
+                        <td class="py-1.5 px-1.5 text-center font-bold text-teal-800 bg-teal-50/50 border-r border-slate-200">${periodTotal}</td>
+                        <td class="sticky-col-right py-1.5 px-1.5 text-center font-bold text-slate-900 bg-slate-100 group-hover:bg-slate-200">${cumTotal}</td>
+                    `;
+
+                    tr.innerHTML = rowHtml;
+                    tbody.appendChild(tr);
+                });
+
+                // Hàng Footer kiểm tra quân số từng đêm (chuẩn = 1 người/đêm)
+                let missingNights = 0;
+                let footHtml = `
+                    <tr class="bg-teal-50/80">
+                        <td class="sticky-col-left bg-teal-50 py-1.5 px-3 font-bold text-teal-950 border-r border-slate-300 text-[11px]">Quân số trực đêm (Chuẩn: 1)</td>
+                `;
+
+                dates.forEach(dateStr => {
+                    const assignedId = appState.guardSchedule[dateStr];
+                    const hasValidStaff = Boolean(assignedId && eligibleMembers.some(m => m.id === assignedId));
+                    const count = hasValidStaff ? 1 : 0;
+                    if (count === 0) missingNights++;
+
+                    const style = count === 1
+                        ? 'text-emerald-700 bg-emerald-50/70 font-semibold'
+                        : 'text-amber-700 bg-amber-100/80 font-bold';
+
+                    footHtml += `
+                        <td title="${count === 1 ? 'Đã bố trí 1 CBVC trực đêm' : 'Chưa bố trí người trực đêm này'}"
+                            class="py-1 px-0.5 text-center border-r border-slate-200 text-[10px] ${style}">
+                            ${count}/1
+                        </td>
+                    `;
+                });
+
+                footHtml += `<td colspan="3" class="bg-slate-100 text-center text-[10px] text-slate-600 font-semibold">Tổng: ${eligibleMembers.length} CBVC</td></tr>`;
+                tfoot.innerHTML = footHtml;
+
+                if (appState.activeTab === 'guard') {
+                    const conflictBadge = document.getElementById('conflict-summary-badge');
+                    const conflictText = document.getElementById('conflict-count-text');
+                    if (missingNights > 0) {
+                        conflictBadge.classList.remove('hidden');
+                        conflictText.textContent = `Còn ${missingNights} đêm chưa bố trí cán bộ trực bảo vệ cơ quan (19h–07h)`;
+                    } else {
+                        conflictBadge.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Click ô ngày trong Tab Trực Bảo vệ: gán người đó trực đêm (1 người/đêm) hoặc hủy nếu đang chọn
+            window.toggleGuardCell = function(dateStr, staffId) {
+                if (!requireGuardPermission()) return;
+                if (appState.guardSchedule[dateStr] === staffId) {
+                    delete appState.guardSchedule[dateStr];
+                } else {
+                    appState.guardSchedule[dateStr] = staffId;
+                }
+                saveGuardScheduleToStorage([dateStr], false);
+                renderAll();
+            };
+
             window.updateDayNote = function(dateStr, val) {
                 if (!appState.activeRole) {
                     showToast("Đang ở chế độ Xem. Vui lòng bấm 'Mở khóa Phân ca' trước.", 'warning');
@@ -2071,16 +2625,7 @@
                 if (appState.schedule[dateStr]) {
                     const cleanNote = val.trim();
                     appState.schedule[dateStr].note = cleanNote;
-                    try {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                            staff: appState.staff,
-                            presets: appState.presets,
-                            startDate: appState.startDate,
-                            endDate: appState.endDate,
-                            schedule: appState.schedule,
-                            updatedAt: Date.now()
-                        }));
-                    } catch (e) {}
+                    saveLocalSnapshot();
                     if (rosterDbRef && !isApplyingRemoteUpdate) {
                         rosterDbRef.update({
                             [`schedule/${dateStr}/note`]: cleanNote,
@@ -2091,7 +2636,7 @@
             };
 
             // ==========================================
-            // 6. CÁC MODAL XỬ LÝ (CA TRỰC, THỜI TIẾT, NHÂN SỰ, ĐỊNH MỨC)
+            // 6. CÁC MODAL XỬ LÝ
             // ==========================================
             window.closeModal = function(modalId) {
                 const el = document.getElementById(modalId);
@@ -2113,7 +2658,7 @@
                 }
             };
 
-            // Modal chỉnh sửa ca trực
+            // Modal chỉnh sửa ca trực dự báo
             window.openShiftEditor = function(dateStr, team, shiftType) {
                 if (!requireTeamPermission(team)) return;
                 editingShiftContext = { dateStr, team, shiftType };
@@ -2262,7 +2807,7 @@
                 showToast(`Đã áp dụng chế độ "${type === 'severe' ? 'Bão / Lũ tăng cường' : 'Bình thường'}" cho toàn kỳ.`, 'success');
             };
 
-            // Modal Quản lý Nhân sự (Chỉ Admin)
+            // Modal Quản lý Nhân sự 4 Tổ (Chỉ Admin)
             window.openStaffModal = function() {
                 if (!requireAdminPermission('danh sách nhân sự')) return;
                 renderStaffModalLists();
@@ -2270,13 +2815,12 @@
             };
 
             function renderStaffModalLists() {
-                const hydroList = document.getElementById('modal-hydro-list');
-                const meteoList = document.getElementById('modal-meteo-list');
-                const hydroMembers = appState.staff.filter(s => s.team === 'hydro');
-                const meteoMembers = appState.staff.filter(s => s.team === 'meteo');
-
-                document.getElementById('modal-hydro-count').textContent = hydroMembers.length;
-                document.getElementById('modal-meteo-count').textContent = meteoMembers.length;
+                const groups = [
+                    { team: 'hydro', listId: 'modal-hydro-list', countId: 'modal-hydro-count' },
+                    { team: 'meteo', listId: 'modal-meteo-list', countId: 'modal-meteo-count' },
+                    { team: 'ks_hydro', listId: 'modal-ks-hydro-list', countId: 'modal-ks-hydro-count' },
+                    { team: 'ks_meteo', listId: 'modal-ks-meteo-list', countId: 'modal-ks-meteo-count' }
+                ];
 
                 const buildItemHTML = (m) => `
                     <li class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 gap-2">
@@ -2288,8 +2832,11 @@
                     </li>
                 `;
 
-                hydroList.innerHTML = hydroMembers.map(buildItemHTML).join('');
-                meteoList.innerHTML = meteoMembers.map(buildItemHTML).join('');
+                groups.forEach(g => {
+                    const members = appState.staff.filter(s => s.team === g.team);
+                    document.getElementById(g.countId).textContent = members.length;
+                    document.getElementById(g.listId).innerHTML = members.map(buildItemHTML).join('');
+                });
             }
 
             window.addStaffMember = function() {
@@ -2302,7 +2849,7 @@
                     return;
                 }
                 const newId = 'st_' + Date.now();
-                appState.staff.push({ id: newId, name: name, team: teamSelect.value });
+                appState.staff.push({ id: newId, name: name, team: teamSelect.value, guardEligible: true });
                 nameInput.value = '';
                 saveFullStateToStorage();
                 renderStaffModalLists();
@@ -2339,6 +2886,11 @@
                             sh.meteoDay = sh.meteoDay.filter(x => x !== id);
                             sh.meteoNight = sh.meteoNight.filter(x => x !== id);
                         });
+                        Object.keys(appState.guardSchedule).forEach(dStr => {
+                            if (appState.guardSchedule[dStr] === id) {
+                                delete appState.guardSchedule[dStr];
+                            }
+                        });
                         saveFullStateToStorage();
                         renderStaffModalLists();
                         renderAll();
@@ -2350,16 +2902,77 @@
             window.resetDefaultStaff = function() {
                 if (!requireAdminPermission('danh sách nhân sự')) return;
                 openConfirmModal(
-                    'Khôi phục danh sách mặc định?',
-                    'Danh sách nhân sự sẽ trở về 10 cán bộ chuẩn ban đầu (4 Thủy văn, 6 Khí tượng).',
+                    'Khôi phục danh sách 18 CBVC mặc định?',
+                    'Danh sách nhân sự sẽ trở về 18 CBVC chuẩn (4 Dự báo TV, 6 Dự báo KT, 5 Kiểm soát TV, 3 Kiểm soát KT).',
                     function() {
                         appState.staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
                         saveFullStateToStorage();
                         renderStaffModalLists();
                         renderAll();
-                        showToast('Đã khôi phục danh sách 10 cán bộ mặc định.', 'success');
+                        showToast('Đã khôi phục danh sách 18 CBVC mặc định.', 'success');
                     }
                 );
+            };
+
+            // Modal Chọn 18 CBVC Trực Bảo vệ (Tổ trưởng Công đoàn & Admin)
+            window.openGuardMembersModal = function() {
+                if (!requireGuardPermission()) return;
+                renderGuardMembersChecklist();
+                document.getElementById('guard-members-modal').classList.remove('hidden');
+            };
+
+            function renderGuardMembersChecklist() {
+                const container = document.getElementById('guard-members-checklist');
+                const eligibleCount = appState.staff.filter(s => s.guardEligible !== false).length;
+                document.getElementById('guard-modal-selected-badge').textContent = `${eligibleCount} / ${appState.staff.length} người`;
+
+                const groups = [
+                    { team: 'hydro', title: 'Tổ Dự báo Thủy văn' },
+                    { team: 'meteo', title: 'Tổ Dự báo Khí tượng' },
+                    { team: 'ks_hydro', title: 'Tổ Kiểm soát Thủy văn' },
+                    { team: 'ks_meteo', title: 'Tổ Kiểm soát Khí tượng' }
+                ];
+
+                container.innerHTML = groups.map(g => {
+                    const members = appState.staff.filter(s => s.team === g.team);
+                    const itemsHtml = members.map(m => {
+                        const checked = m.guardEligible !== false;
+                        return `
+                            <label class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs">
+                                <input type="checkbox" ${checked ? 'checked' : ''} onchange="window.toggleGuardEligible('${m.id}', this.checked)"
+                                    class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
+                                <span class="font-medium text-slate-800">${escapeHTML(m.name)}</span>
+                            </label>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <div class="bg-slate-100 px-3 py-1.5 font-bold text-slate-700 text-xs border-b border-slate-200">${g.title} (${members.length})</div>
+                            <div class="p-2 space-y-0.5">${itemsHtml}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.toggleGuardEligible = function(staffId, isChecked) {
+                if (!requireGuardPermission()) return;
+                const st = appState.staff.find(s => s.id === staffId);
+                if (st) {
+                    st.guardEligible = Boolean(isChecked);
+                    saveGuardScheduleToStorage([], true);
+                    renderGuardMembersChecklist();
+                    renderAll();
+                }
+            };
+
+            window.selectAllGuardMembers = function() {
+                if (!requireGuardPermission()) return;
+                appState.staff.forEach(s => { s.guardEligible = true; });
+                saveGuardScheduleToStorage([], true);
+                renderGuardMembersChecklist();
+                renderAll();
+                showToast(`Đã chọn tất cả ${appState.staff.length} CBVC tham gia trực bảo vệ.`, 'success');
             };
 
             // Modal Định mức mặc định (Chỉ Admin)
@@ -2405,11 +3018,26 @@
             function updatePrintHeader() {
                 const titleEl = document.getElementById('print-doc-title');
                 const subEl = document.getElementById('print-period-subtitle');
-                if (titleEl) {
-                    titleEl.textContent = appState.activeTab === 'matrix'
-                        ? 'BẢNG TÍCH PHÂN CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG'
-                        : 'LỊCH PHÂN CÔNG CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG';
+                const unitEl = document.getElementById('print-unit-sub');
+                const signForecast = document.getElementById('print-sign-forecast');
+                const signGuard = document.getElementById('print-sign-guard');
+
+                if (appState.activeTab === 'guard') {
+                    if (unitEl) unitEl.textContent = 'CÔNG ĐOÀN CƠ SỞ';
+                    if (titleEl) titleEl.textContent = 'LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 – 07H00)';
+                    if (signForecast) signForecast.classList.remove('print-only');
+                    if (signGuard) signGuard.classList.add('print-only');
+                } else {
+                    if (unitEl) unitEl.textContent = 'PHÒNG DỰ BÁO KTTV';
+                    if (titleEl) {
+                        titleEl.textContent = appState.activeTab === 'matrix'
+                            ? 'BẢNG TÍCH PHÂN CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG'
+                            : 'LỊCH PHÂN CÔNG CA TRỰC DỰ BÁO THỦY VĂN & KHÍ TƯỢNG';
+                    }
+                    if (signForecast) signForecast.classList.add('print-only');
+                    if (signGuard) signGuard.classList.remove('print-only');
                 }
+
                 if (subEl) {
                     subEl.textContent = `Từ ngày ${formatDisplayDate(appState.startDate)} đến ngày ${formatDisplayDate(appState.endDate)}`;
                 }
@@ -2429,13 +3057,17 @@
                     return s ? s.name : '';
                 }).filter(Boolean).join('; ');
 
-                let csv = '\uFEFF';
-                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV\n';
                 const dateHeaders = dates.map(d => formatDisplayDate(d).slice(0, 5));
-                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '\n';
 
-                appState.staff.forEach((s, idx) => {
-                    const teamLabel = s.team === 'hydro' ? 'Tổ Dự báo Thủy văn' : 'Tổ Dự báo Khí tượng';
+                let csv = '﻿';
+                csv += 'BẢNG 1: MA TRẬN TÍCH PHÂN CA TRỰC DỰ BÁO KTTV
+';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Ca Ngày', 'Ca Đêm', 'Trực T7/CN', 'Tổng công'].join(',') + '
+';
+
+                const forecastStaff = appState.staff.filter(s => s.team === 'hydro' || s.team === 'meteo');
+                forecastStaff.forEach((s, idx) => {
+                    const teamLabel = getTeamFullLabel(s.team);
                     const dayKey = `${s.team}Day`;
                     const nightKey = `${s.team}Night`;
                     let cDay = 0, cNight = 0, cWknd = 0, cTotal = 0;
@@ -2453,11 +3085,15 @@
                         return '';
                     });
 
-                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '\n';
+                    csv += [idx + 1, `"${teamLabel}"`, `"${s.name}"`, ...cells, cDay, cNight, cWknd, cTotal].join(',') + '
+';
                 });
 
-                csv += '\nBẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC BÁO CÁO LÃNH ĐẠO\n';
-                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú\n';
+                csv += '
+BẢNG 2: BẢNG TỔNG HỢP LỊCH TRỰC DỰ BÁO BÁO CÁO LÃNH ĐẠO
+';
+                csv += 'Ngày,Thứ,Trạng thái thời tiết,Thủy văn - Ca Ngày,Thủy văn - Ca Đêm,Khí tượng - Ca Ngày,Khí tượng - Ca Đêm,Ghi chú
+';
 
                 dates.forEach(dateStr => {
                     const d = appState.schedule[dateStr];
@@ -2471,24 +3107,55 @@
                         `"${getNames(d.shifts.meteoDay)}"`,
                         `"${getNames(d.shifts.meteoNight)}"`,
                         `"${(d.note || '').replace(/"/g, '""')}"`
-                    ].join(',') + '\n';
+                    ].join(',') + '
+';
+                });
+
+                // Bảng 3: Trực Bảo vệ cơ quan (19h00 - 07h00, 18 CBVC)
+                csv += '
+BẢNG 3: LỊCH TRỰC ĐÊM BẢO VỆ CƠ QUAN (19H00 - 07H00)
+';
+                csv += ['STT', 'Tổ chuyên môn', 'Họ và tên', ...dateHeaders, 'Trực T7/CN', 'Tổng đêm trong kỳ', 'Lũy kế toàn mùa'].join(',') + '
+';
+
+                const cumMap = {};
+                Object.keys(appState.guardSchedule).forEach(dk => {
+                    const sid = appState.guardSchedule[dk];
+                    if (sid) cumMap[sid] = (cumMap[sid] || 0) + 1;
+                });
+
+                const guardMembers = appState.staff.filter(s => s.guardEligible !== false);
+                guardMembers.forEach((s, idx) => {
+                    let gWknd = 0, gTotal = 0;
+                    const cells = dates.map(dateStr => {
+                        const wknd = isWeekend(dateStr);
+                        const isG = appState.guardSchedule[dateStr] === s.id;
+                        if (isG) {
+                            gTotal++;
+                            if (wknd) gWknd++;
+                            return 'Đ';
+                        }
+                        return '';
+                    });
+                    csv += [idx + 1, `"${getTeamFullLabel(s.team)}"`, `"${s.name}"`, ...cells, gWknd, gTotal, cumMap[s.id] || 0].join(',') + '
+';
                 });
 
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `Phan_Ca_Truc_KTTV_${appState.startDate}_den_${appState.endDate}.csv`;
+                link.download = `Phan_Ca_Truc_KTTV_Va_Bao_Ve_${appState.startDate}_den_${appState.endDate}.csv`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
 
-                showToast('Đã xuất file Excel (CSV UTF-8) gồm cả 2 bảng!', 'success');
+                showToast('Đã xuất file Excel (CSV UTF-8) gồm cả 3 bảng (Dự báo & Bảo vệ)!', 'success');
             };
 
             // ==========================================
-            // 8. KHỞI TẠO ỨNG DỤNG & ĐỒNG BỘ FIREBASE AN TOÀN
+            // 8. KHỞI TẠO & ĐỒNG BỘ FIREBASE (BẢO TOÀN DỮ LIỆU ĐANG CÓ)
             // ==========================================
             function setupFirebaseRealtimeListeners() {
                 if (!firebaseDb || !rosterDbRef) {
@@ -2504,7 +3171,6 @@
                     }
                 });
 
-                // Lắng nghe mật khẩu phân quyền 3 vai trò trên đám mây
                 if (rolesAuthDbRef) {
                     rolesAuthDbRef.on('value', (snap) => {
                         const cloudRoles = snap.val();
@@ -2512,6 +3178,7 @@
                             appState.rolePasswords = {
                                 hydro: (cloudRoles.hydro && cloudRoles.hydro.length >= 4) ? cloudRoles.hydro : appState.rolePasswords.hydro,
                                 meteo: (cloudRoles.meteo && cloudRoles.meteo.length >= 4) ? cloudRoles.meteo : appState.rolePasswords.meteo,
+                                union: (cloudRoles.union && cloudRoles.union.length >= 4) ? cloudRoles.union : appState.rolePasswords.union,
                                 admin: (cloudRoles.admin && cloudRoles.admin.length >= 4) ? cloudRoles.admin : appState.rolePasswords.admin
                             };
                             try { localStorage.setItem(AUTH_PASS_KEY, JSON.stringify(appState.rolePasswords)); } catch (e) {}
@@ -2519,7 +3186,6 @@
                     });
                 }
 
-                // Tương thích ngược với khóa mật khẩu admin cũ
                 if (legacyPassDbRef) {
                     legacyPassDbRef.on('value', (snap) => {
                         const cloudPass = snap.val();
@@ -2530,7 +3196,6 @@
                     });
                 }
 
-                // Lắng nghe dữ liệu phân ca thời gian thực
                 rosterDbRef.on('value', (snapshot) => {
                     const cloudData = snapshot.val();
                     if (!cloudData) {
@@ -2545,7 +3210,14 @@
                     isApplyingRemoteUpdate = true;
                     try {
                         if (cloudData.staff) {
-                            appState.staff = Array.isArray(cloudData.staff) ? cloudData.staff : Object.values(cloudData.staff);
+                            const rawCloudStaff = Array.isArray(cloudData.staff) ? cloudData.staff : Object.values(cloudData.staff);
+                            const beforeCount = rawCloudStaff.length;
+                            appState.staff = migrateStaffList(rawCloudStaff);
+
+                            // Nếu trên đám mây chưa có 8 cán bộ Kiểm soát, tự động bổ sung vào nhánh staff mà không đụng tới lịch đang có
+                            if (appState.staff.length > beforeCount) {
+                                rosterDbRef.update({ staff: appState.staff, updatedAt: Date.now() }).catch(() => {});
+                            }
                         }
                         if (cloudData.presets && cloudData.presets.normal && cloudData.presets.severe) {
                             appState.presets = cloudData.presets;
@@ -2561,16 +3233,13 @@
                         if (cloudData.schedule) {
                             appState.schedule = normalizeFirebaseSchedule(cloudData.schedule);
                         }
+                        if (cloudData.guardSchedule) {
+                            appState.guardSchedule = normalizeGuardSchedule(cloudData.guardSchedule);
+                        } else {
+                            appState.guardSchedule = {};
+                        }
                         ensureScheduleDatesExist();
-                        try {
-                            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                                staff: appState.staff,
-                                presets: appState.presets,
-                                startDate: appState.startDate,
-                                endDate: appState.endDate,
-                                schedule: appState.schedule
-                            }));
-                        } catch (e) {}
+                        saveLocalSnapshot();
                         renderAll();
                     } finally {
                         isApplyingRemoteUpdate = false;
