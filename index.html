@@ -1766,43 +1766,64 @@
                 for (let i = 0; i < dates.length; i++) {
                     const dStr = dates[i];
                     const dayData = appState.schedule[dStr];
-                    if (!dayData) continue;
+                    const guardId = appState.guardSchedule ? appState.guardSchedule[dStr] : null;
 
-                    const isNormalWeather = dayData.weather === 'normal';
+                    if (dayData) {
+                        const isNormalWeather = dayData.weather === 'normal';
 
-                    ['hydro', 'meteo'].forEach(team => {
-                        const dList = dayData.shifts[`${team}Day`] || [];
-                        const nList = dayData.shifts[`${team}Night`] || [];
-                        dList.forEach(id => {
-                            if (nList.includes(id) && isNormalWeather) {
-                                warnings[`${dStr}_${team}Day_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
-                                warnings[`${dStr}_${team}Night_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
+                        ['hydro', 'meteo'].forEach(team => {
+                            const dList = dayData.shifts[`${team}Day`] || [];
+                            const nList = dayData.shifts[`${team}Night`] || [];
+
+                            dList.forEach(id => {
+                                if (nList.includes(id) && isNormalWeather) {
+                                    warnings[`${dStr}_${team}Day_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
+                                    warnings[`${dStr}_${team}Night_${id}`] = 'Trực thông cả Ngày và Đêm trong ngày bình thường';
+                                    totalConflicts++;
+                                }
+                            });
+
+                            if (guardId && nList.includes(guardId)) {
+                                const teamLabel = team === 'meteo' ? 'Khí tượng' : 'Thủy văn';
+                                const msg = `Trùng trực Ca Đêm Dự báo ${teamLabel} và Trực đêm bảo vệ (19h–07h)`;
+                                warnings[`${dStr}_${team}Night_${guardId}`] = msg;
+                                warnings[`${dStr}_guard_${guardId}`] = msg;
                                 totalConflicts++;
                             }
                         });
-                    });
 
-                    if (i > 0) {
-                        const prevStr = dates[i - 1];
-                        const prevData = appState.schedule[prevStr];
-                        if (prevData) {
-                            ['hydro', 'meteo'].forEach(team => {
-                                const prevNight = prevData.shifts[`${team}Night`] || [];
-                                const curDay = dayData.shifts[`${team}Day`] || [];
-                                curDay.forEach(id => {
-                                    if (prevNight.includes(id)) {
-                                        warnings[`${dStr}_${team}Day_${id}`] = 'Trực Ca Đêm hôm trước sang Ca Ngày hôm nay (thiếu nghỉ ngơi)';
-                                        totalConflicts++;
-                                    }
+                        if (i > 0) {
+                            const prevStr = dates[i - 1];
+                            const prevData = appState.schedule[prevStr];
+                            if (prevData) {
+                                ['hydro', 'meteo'].forEach(team => {
+                                    const prevNight = prevData.shifts[`${team}Night`] || [];
+                                    const curDay = dayData.shifts[`${team}Day`] || [];
+                                    curDay.forEach(id => {
+                                        if (prevNight.includes(id)) {
+                                            warnings[`${dStr}_${team}Day_${id}`] = 'Trực Ca Đêm hôm trước sang Ca Ngày hôm nay (thiếu nghỉ ngơi)';
+                                            totalConflicts++;
+                                        }
+                                    });
                                 });
-                            });
+                            }
+                        }
+                    }
+
+                    if (i > 0 && guardId) {
+                        const prevStr = dates[i - 1];
+                        if (appState.guardSchedule && appState.guardSchedule[prevStr] === guardId) {
+                            const prevWarn = warnings[`${dStr}_guard_${guardId}`];
+                            const consecMsg = 'Trực đêm bảo vệ 2 đêm liên tiếp';
+                            warnings[`${dStr}_guard_${guardId}`] = prevWarn ? `${prevWarn}; ${consecMsg}` : consecMsg;
+                            totalConflicts++;
                         }
                     }
                 }
                 return { warnings, totalConflicts };
             }
 
-            // Phân ca tự động cho Trực Bảo vệ cơ quan (chia đều 18 CBVC, mỗi đêm 1 người 19h–07h)
+            // Phân ca tự động cho Trực Bảo vệ cơ quan (chạy sau khi đã có lịch trực đêm KTTV, chia đều 18 CBVC)
             function autoAssignGuardSchedule(dates) {
                 if (!requireGuardPermission()) return;
                 const eligibleMembers = appState.staff.filter(s => s.guardEligible !== false);
@@ -1827,28 +1848,54 @@
                     }
                 });
 
+                let fallbackOverlapCount = 0;
+
                 dates.forEach((dateStr, idx) => {
                     const prevDateStr = idx > 0 ? dates[idx - 1] : null;
                     const prevPrevDateStr = idx > 1 ? dates[idx - 2] : null;
                     const wknd = isWeekend(dateStr);
                     const dayForecast = appState.schedule[dateStr];
+                    const prevDayForecast = prevDateStr ? appState.schedule[prevDateStr] : null;
+
+                    const isOnForecastNight = (staffId) => {
+                        if (!dayForecast || !dayForecast.shifts) return false;
+                        const hNight = dayForecast.shifts.hydroNight || [];
+                        const mNight = dayForecast.shifts.meteoNight || [];
+                        return hNight.includes(staffId) || mNight.includes(staffId);
+                    };
+
+                    const wasOnPrevForecastNight = (staffId) => {
+                        if (!prevDayForecast || !prevDayForecast.shifts) return false;
+                        const hNight = prevDayForecast.shifts.hydroNight || [];
+                        const mNight = prevDayForecast.shifts.meteoNight || [];
+                        return hNight.includes(staffId) || mNight.includes(staffId);
+                    };
 
                     const candidates = [...eligibleMembers];
                     candidates.sort((a, b) => {
                         const sa = stats[a.id];
                         const sb = stats[b.id];
 
-                        // Tránh xếp trực 2 đêm liên tiếp hoặc cách 1 đêm
-                        const consecA = (prevDateStr && sa.lastGuardDate === prevDateStr) ? 1000 : ((prevPrevDateStr && sa.lastGuardDate === prevPrevDateStr) ? 200 : 0);
-                        const consecB = (prevDateStr && sb.lastGuardDate === prevDateStr) ? 1000 : ((prevPrevDateStr && sb.lastGuardDate === prevPrevDateStr) ? 200 : 0);
+                        // 1. Ưu tiên tuyệt đối tránh trùng trực đêm bảo vệ với người đang trực Ca Đêm Dự báo KTTV cùng đêm
+                        const overlapA = isOnForecastNight(a.id) ? 10000 : 0;
+                        const overlapB = isOnForecastNight(b.id) ? 10000 : 0;
+                        if (overlapA !== overlapB) return overlapA - overlapB;
+
+                        // 2. Tránh xếp trực bảo vệ 2 đêm liên tiếp hoặc cách 1 đêm
+                        const consecA = (prevDateStr && sa.lastGuardDate === prevDateStr)
+                            ? 1000
+                            : ((prevPrevDateStr && sa.lastGuardDate === prevPrevDateStr) ? 200 : 0);
+                        const consecB = (prevDateStr && sb.lastGuardDate === prevDateStr)
+                            ? 1000
+                            : ((prevPrevDateStr && sb.lastGuardDate === prevPrevDateStr) ? 200 : 0);
                         if (consecA !== consecB) return consecA - consecB;
 
-                        // Hạn chế trùng với người đang trực Ca Đêm Dự báo KTTV cùng đêm đó
-                        const overlapForecastA = (dayForecast && (dayForecast.shifts.hydroNight.includes(a.id) || dayForecast.shifts.meteoNight.includes(a.id))) ? 150 : 0;
-                        const overlapForecastB = (dayForecast && (dayForecast.shifts.hydroNight.includes(b.id) || dayForecast.shifts.meteoNight.includes(b.id))) ? 150 : 0;
-                        if (overlapForecastA !== overlapForecastB) return overlapForecastA - overlapForecastB;
+                        // 3. Hạn chế dồn trực bảo vệ đêm nay nếu vừa trực Ca Đêm Dự báo KTTV đêm trước
+                        const prevNightA = wasOnPrevForecastNight(a.id) ? 400 : 0;
+                        const prevNightB = wasOnPrevForecastNight(b.id) ? 400 : 0;
+                        if (prevNightA !== prevNightB) return prevNightA - prevNightB;
 
-                        // Ưu tiên người có tổng đêm trực thấp nhất (chia đều nghĩa vụ 18 CBVC)
+                        // 4. Ưu tiên người có tổng đêm trực thấp nhất (chia đều nghĩa vụ 18 CBVC)
                         if (sa.total !== sb.total) return sa.total - sb.total;
                         if (wknd && sa.weekend !== sb.weekend) return sa.weekend - sb.weekend;
 
@@ -1856,6 +1903,9 @@
                     });
 
                     const chosen = candidates[0];
+                    if (isOnForecastNight(chosen.id)) {
+                        fallbackOverlapCount++;
+                    }
                     appState.guardSchedule[dateStr] = chosen.id;
                     stats[chosen.id].total++;
                     if (wknd) stats[chosen.id].weekend++;
@@ -1864,7 +1914,15 @@
 
                 saveGuardScheduleToStorage(dates, false);
                 renderAll();
-                showToast(`Đã chia đều lịch trực đêm bảo vệ (19h–07h) cho ${eligibleMembers.length} CBVC!`, 'success');
+
+                if (fallbackOverlapCount > 0) {
+                    showToast(
+                        `Đã xếp tự động trực bảo vệ (ưu tiên tránh trùng ca đêm KTTV), còn ${fallbackOverlapCount} đêm bất khả kháng bị trùng — vui lòng rà soát ô viền đỏ.`,
+                        'warning'
+                    );
+                } else {
+                    showToast(`Đã chia đều lịch trực đêm bảo vệ (19h–07h) cho ${eligibleMembers.length} CBVC và tránh trùng ca đêm KTTV!`, 'success');
+                }
             }
 
             window.autoAssignSchedule = function() {
@@ -2420,6 +2478,7 @@
                 const tbody = document.getElementById('guard-tbody');
                 const tfoot = document.getElementById('guard-tfoot');
                 const dates = getActiveDateList();
+                const { warnings } = detectConflicts(dates);
                 const guardEditable = canEditGuard();
                 const isLockedByOtherRole = Boolean(appState.activeRole && !guardEditable);
 
@@ -2526,7 +2585,8 @@
                             dayForecast.shifts.hydroNight.includes(member.id) ||
                             dayForecast.shifts.meteoNight.includes(member.id)
                         );
-                        const hasWarning = isConsecutiveNight || isOverlapForecastNight;
+                        const warnGuard = isAssigned ? warnings[`${dateStr}_guard_${member.id}`] : '';
+                        const hasWarning = Boolean(warnGuard || isConsecutiveNight || isOverlapForecastNight);
 
                         let badgeHtml = '<span class="text-transparent text-[11px]">-</span>';
                         if (isAssigned) {
@@ -2541,7 +2601,8 @@
                             : (isLockedByOtherRole ? 'team-locked-cell' : 'cursor-default');
 
                         let tip = `${member.name} • Đêm ${formatDisplayDate(dateStr)} (19h–07h)`;
-                        if (isConsecutiveNight) tip = 'Cảnh báo: Trực đêm bảo vệ 2 đêm liên tiếp!';
+                        if (warnGuard) tip = `Cảnh báo: ${warnGuard}`;
+                        else if (isConsecutiveNight) tip = 'Cảnh báo: Trực đêm bảo vệ 2 đêm liên tiếp!';
                         else if (isOverlapForecastNight) tip = 'Cảnh báo: Trùng với lịch trực Ca Đêm Dự báo KTTV!';
                         else if (guardEditable) tip += ' (Click để gán / hủy trực đêm này)';
 
@@ -2609,11 +2670,25 @@
                 if (!requireGuardPermission()) return;
                 if (appState.guardSchedule[dateStr] === staffId) {
                     delete appState.guardSchedule[dateStr];
-                } else {
-                    appState.guardSchedule[dateStr] = staffId;
+                    saveGuardScheduleToStorage([dateStr], false);
+                    renderAll();
+                    return;
                 }
+
+                appState.guardSchedule[dateStr] = staffId;
                 saveGuardScheduleToStorage([dateStr], false);
                 renderAll();
+
+                const dayForecast = appState.schedule[dateStr];
+                const isForecastNight = dayForecast && dayForecast.shifts && (
+                    (dayForecast.shifts.hydroNight || []).includes(staffId) ||
+                    (dayForecast.shifts.meteoNight || []).includes(staffId)
+                );
+                if (isForecastNight) {
+                    const member = appState.staff.find(s => s.id === staffId);
+                    const name = member ? member.name : 'Cán bộ này';
+                    showToast(`Cảnh báo: ${name} đang trực Ca Đêm Dự báo KTTV đêm ${formatDisplayDate(dateStr)}!`, 'warning');
+                }
             };
 
             window.updateDayNote = function(dateStr, val) {
